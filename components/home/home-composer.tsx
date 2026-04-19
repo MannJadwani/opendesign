@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useState, useTransition } from "react";
 import { createProject } from "@/lib/actions";
 
-type Tab = "prototype" | "deck" | "template" | "other";
+type Tab = "prototype" | "deck" | "other";
 type Fidelity = "wireframe" | "high";
 
 type SystemOpt = { id: string; name: string };
@@ -17,33 +17,29 @@ export function HomeComposer({ systems }: Props) {
   const [tab, setTab] = useState<Tab>("prototype");
   const [name, setName] = useState("");
   const [fidelity, setFidelity] = useState<Fidelity>("high");
-  const [systemId, setSystemId] = useState<string>(systems[0]?.id ?? "");
+  const [systemId, setSystemId] = useState<string>("");
   const [pending, startTransition] = useTransition();
 
   const outputType = tab === "deck" ? "slides" : "website";
-  const canCreate = tab === "template" ? !!systemId : true;
 
   function submit() {
     startTransition(async () => {
       await createProject({
         name,
         outputType,
-        designSystemId: tab === "template" ? systemId : null,
+        designSystemId: systemId || null,
       });
     });
   }
 
   return (
     <aside className="flex w-[340px] shrink-0 flex-col gap-5 border-r border-black/5 bg-[#F5F0E8] px-6 py-5">
-      <div className="flex items-center gap-3 overflow-x-auto text-[13px]">
+      <div className="flex items-center gap-4 text-[13px]">
         <TabButton active={tab === "prototype"} onClick={() => setTab("prototype")}>
           Prototype
         </TabButton>
         <TabButton active={tab === "deck"} onClick={() => setTab("deck")}>
           Slide deck
-        </TabButton>
-        <TabButton active={tab === "template"} onClick={() => setTab("template")}>
-          From template
         </TabButton>
         <TabButton active={tab === "other"} onClick={() => setTab("other")}>
           Other
@@ -54,7 +50,6 @@ export function HomeComposer({ systems }: Props) {
         <p className="font-serif text-lg leading-tight">
           {tab === "prototype" && "New prototype"}
           {tab === "deck" && "New slide deck"}
-          {tab === "template" && "From design system"}
           {tab === "other" && "Something else"}
         </p>
 
@@ -64,26 +59,6 @@ export function HomeComposer({ systems }: Props) {
           placeholder="Project name"
           className="mt-3 w-full rounded-lg border border-black/10 bg-white px-3 py-2 text-[13px] focus:border-[#D9623A] focus:outline-none"
         />
-
-        {tab === "template" && (
-          <div className="mt-3">
-            {systems.length === 0 ? (
-              <p className="text-[12px] text-black/55">
-                No saved systems. <Link href="/systems" className="underline">Create one →</Link>
-              </p>
-            ) : (
-              <select
-                value={systemId}
-                onChange={(e) => setSystemId(e.target.value)}
-                className="w-full rounded-lg border border-black/10 bg-white px-3 py-2 text-[13px]"
-              >
-                {systems.map((s) => (
-                  <option key={s.id} value={s.id}>{s.name}</option>
-                ))}
-              </select>
-            )}
-          </div>
-        )}
 
         {(tab === "prototype" || tab === "deck") && (
           <div className="mt-4 grid grid-cols-2 gap-3">
@@ -102,16 +77,34 @@ export function HomeComposer({ systems }: Props) {
           </div>
         )}
 
+        {systems.length > 0 && (
+          <div className="mt-4">
+            <label className="text-[11px] uppercase tracking-[0.18em] text-black/50">
+              Design system
+            </label>
+            <select
+              value={systemId}
+              onChange={(e) => setSystemId(e.target.value)}
+              className="mt-1.5 w-full rounded-lg border border-black/10 bg-white px-3 py-2 text-[13px]"
+            >
+              <option value="">None</option>
+              {systems.map((s) => (
+                <option key={s.id} value={s.id}>{s.name}</option>
+              ))}
+            </select>
+          </div>
+        )}
+
         {tab === "other" && (
           <p className="mt-3 text-[12px] text-black/55">
-            Blank project. Describe anything in chat — landing, email, wireframe, diagram.
+            Blank project. Describe anything in chat — email, wireframe, diagram.
           </p>
         )}
 
         <button
           type="button"
           onClick={submit}
-          disabled={pending || !canCreate}
+          disabled={pending}
           className="cd-hover-lift mt-4 flex w-full items-center justify-center gap-1.5 rounded-lg bg-[#D9623A] px-3 py-2 text-[13px] font-medium text-white hover:bg-[#C0462A] disabled:opacity-50"
         >
           <span>+</span>
@@ -125,13 +118,15 @@ export function HomeComposer({ systems }: Props) {
 
       <div className="mt-auto rounded-2xl border border-black/5 bg-white/60 p-4">
         <p className="text-[13px] text-[#3D3831]">
-          Create a design system so every new prototype starts on-brand.
+          {systems.length === 0
+            ? "Create a design system so every new prototype starts on-brand."
+            : "Manage palette, type, and mood tokens used across projects."}
         </p>
         <Link
           href="/systems"
           className="mt-3 flex items-center justify-center rounded-lg bg-[#D9623A] px-3 py-2 text-[13px] font-medium text-white hover:bg-[#C0462A]"
         >
-          Set up design system
+          {systems.length === 0 ? "Set up design system" : "Manage design systems"}
         </Link>
       </div>
     </aside>
