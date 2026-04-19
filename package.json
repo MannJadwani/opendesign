@@ -12,6 +12,7 @@
     "@ai-sdk/react": "^3.0.170",
     "@neondatabase/serverless": "^1.1.0",
     "@openrouter/ai-sdk-provider": "^2.8.0",
+    "@vercel/analytics": "^2.0.1",
     "ai": "^6.0.168",
     "better-auth": "^1.6.5",
     "clsx": "^2.1.1",
