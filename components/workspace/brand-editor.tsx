@@ -1,23 +1,30 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import Link from "next/link";
 import type { BrandTokens } from "@/lib/ai/scrapers/brand-ingest";
 import {
   ingestBrandAction,
   setBrandApplyAction,
   clearBrandAction,
+  setProjectDesignSystemAction,
+  saveBrandAsSystemAction,
 } from "@/lib/actions";
 
 type Props = {
   projectId: string;
   initialTokens: BrandTokens | null;
   initialApply: boolean;
+  systems: { id: string; name: string }[];
+  initialSystemId: string | null;
 };
 
 export function BrandEditor({
   projectId,
   initialTokens,
   initialApply,
+  systems,
+  initialSystemId,
 }: Props) {
   const [tokens, setTokens] = useState<BrandTokens | null>(initialTokens);
   const [apply, setApply] = useState(initialApply);
@@ -27,6 +34,10 @@ export function BrandEditor({
   const [ingesting, startIngest] = useTransition();
   const [toggling, startToggle] = useTransition();
   const [clearing, startClear] = useTransition();
+  const [systemId, setSystemId] = useState<string | null>(initialSystemId);
+  const [linking, startLink] = useTransition();
+  const [saveName, setSaveName] = useState("");
+  const [savingSystem, startSaveSystem] = useTransition();
 
   function onIngest(e: React.FormEvent) {
     e.preventDefault();
@@ -68,8 +79,68 @@ export function BrandEditor({
     });
   }
 
+  function onLinkSystem(next: string | null) {
+    setSystemId(next);
+    startLink(async () => {
+      try {
+        await setProjectDesignSystemAction(projectId, next);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "link failed");
+        setSystemId(initialSystemId);
+      }
+    });
+  }
+
+  function onSaveAsSystem() {
+    const n = saveName.trim();
+    if (!n) return;
+    setError(null);
+    startSaveSystem(async () => {
+      try {
+        const res = await saveBrandAsSystemAction(projectId, n);
+        setSystemId(res.id);
+        setSaveName("");
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "save failed");
+      }
+    });
+  }
+
   return (
     <div className="mt-8 space-y-6">
+      <section className="rounded-lg border border-black/10 bg-white p-4">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <h2 className="text-[13px] font-medium">Saved design system</h2>
+            <p className="text-[11px] text-[#6B655D]">
+              Reuse a system across projects.{" "}
+              <Link href="/systems" className="text-[#D9623A] hover:underline">
+                Manage systems →
+              </Link>
+            </p>
+          </div>
+          <select
+            value={systemId ?? ""}
+            disabled={linking}
+            onChange={(e) => onLinkSystem(e.target.value || null)}
+            className="rounded-md border border-black/10 bg-white px-2 py-1.5 text-[12px] outline-none focus:border-[#D9623A] disabled:opacity-50"
+          >
+            <option value="">— none —</option>
+            {systems.map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.name}
+              </option>
+            ))}
+          </select>
+        </div>
+        {systemId && apply && (
+          <p className="mt-2 text-[11px] text-[#9A9389]">
+            Brand below overrides the saved system while &ldquo;Apply to
+            generations&rdquo; is on.
+          </p>
+        )}
+      </section>
+
       <form onSubmit={onIngest} className="space-y-3">
         <div className="flex gap-1 rounded-md border border-black/10 bg-white p-0.5 text-[12px]">
           <button
@@ -220,6 +291,24 @@ export function BrandEditor({
               </>
             )}
           </dl>
+
+          <div className="mt-5 flex items-center gap-2 border-t border-black/5 pt-4">
+            <input
+              type="text"
+              value={saveName}
+              onChange={(e) => setSaveName(e.target.value)}
+              placeholder="Name this as a reusable system"
+              className="flex-1 rounded-md border border-black/10 bg-white px-3 py-1.5 text-[12px] outline-none focus:border-[#D9623A]"
+            />
+            <button
+              type="button"
+              onClick={onSaveAsSystem}
+              disabled={savingSystem || !saveName.trim()}
+              className="rounded-md border border-black/10 bg-[#FAF6EF] px-3 py-1.5 text-[12px] font-medium text-[#3D3831] hover:bg-[#F2ECE1] disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {savingSystem ? "Saving…" : "Save as design system"}
+            </button>
+          </div>
         </section>
       ) : (
         <p className="text-[13px] text-[#9A9389]">

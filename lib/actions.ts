@@ -83,14 +83,18 @@ export async function listProjectsWithPreview() {
   }));
 }
 
-export async function createProject(outputType: string = "website") {
+export async function createProject(
+  input: string | { name?: string; outputType?: string; designSystemId?: string | null } = {},
+) {
   const user = await requireUser();
+  const opts = typeof input === "string" ? { outputType: input } : input;
   const id = rid("prj");
   await db.insert(schema.project).values({
     id,
     userId: user.id,
-    title: "Untitled",
-    outputType,
+    title: opts.name?.trim() || "Untitled",
+    outputType: opts.outputType ?? "website",
+    designSystemId: opts.designSystemId ?? null,
   });
   redirect(`/p/${id}`);
 }
@@ -238,6 +242,172 @@ export async function saveEditedArtifact(
     .set({ updatedAt: new Date() })
     .where(eq(schema.project.id, projectId));
   return { id, version };
+}
+
+export type DesignSystemRow = {
+  id: string;
+  name: string;
+  tokens: import("@/lib/ai/scrapers/brand-ingest").BrandTokens;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
+export async function listDesignSystems(): Promise<DesignSystemRow[]> {
+  const user = await requireUser();
+  const rows = await db
+    .select()
+    .from(schema.designSystem)
+    .where(eq(schema.designSystem.userId, user.id))
+    .orderBy(desc(schema.designSystem.updatedAt));
+  return rows.map((r) => ({
+    id: r.id,
+    name: r.name,
+    tokens: r.tokens as DesignSystemRow["tokens"],
+    createdAt: r.createdAt,
+    updatedAt: r.updatedAt,
+  }));
+}
+
+export async function getDesignSystem(
+  id: string,
+): Promise<DesignSystemRow | null> {
+  const user = await requireUser();
+  const [row] = await db
+    .select()
+    .from(schema.designSystem)
+    .where(
+      and(
+        eq(schema.designSystem.id, id),
+        eq(schema.designSystem.userId, user.id),
+      ),
+    )
+    .limit(1);
+  if (!row) return null;
+  return {
+    id: row.id,
+    name: row.name,
+    tokens: row.tokens as DesignSystemRow["tokens"],
+    createdAt: row.createdAt,
+    updatedAt: row.updatedAt,
+  };
+}
+
+export async function createDesignSystemAction(input: {
+  name: string;
+  tokens: import("@/lib/ai/scrapers/brand-ingest").BrandTokens;
+}): Promise<{ id: string }> {
+  const user = await requireUser();
+  const id = rid("ds");
+  await db.insert(schema.designSystem).values({
+    id,
+    userId: user.id,
+    name: input.name.trim() || "Untitled system",
+    tokens: input.tokens,
+  });
+  revalidatePath("/systems");
+  return { id };
+}
+
+export async function updateDesignSystemAction(
+  id: string,
+  patch: {
+    name?: string;
+    tokens?: import("@/lib/ai/scrapers/brand-ingest").BrandTokens;
+  },
+): Promise<void> {
+  const user = await requireUser();
+  const update: Record<string, unknown> = { updatedAt: new Date() };
+  if (patch.name !== undefined) update.name = patch.name.trim() || "Untitled system";
+  if (patch.tokens !== undefined) update.tokens = patch.tokens;
+  await db
+    .update(schema.designSystem)
+    .set(update)
+    .where(
+      and(
+        eq(schema.designSystem.id, id),
+        eq(schema.designSystem.userId, user.id),
+      ),
+    );
+  revalidatePath("/systems");
+  revalidatePath(`/systems/${id}`);
+}
+
+export async function deleteDesignSystemAction(id: string): Promise<void> {
+  const user = await requireUser();
+  // Clear any project references first — FK is text without cascade.
+  await db
+    .update(schema.project)
+    .set({ designSystemId: null })
+    .where(
+      and(
+        eq(schema.project.userId, user.id),
+        eq(schema.project.designSystemId, id),
+      ),
+    );
+  await db
+    .delete(schema.designSystem)
+    .where(
+      and(
+        eq(schema.designSystem.id, id),
+        eq(schema.designSystem.userId, user.id),
+      ),
+    );
+  revalidatePath("/systems");
+}
+
+export async function setProjectDesignSystemAction(
+  projectId: string,
+  designSystemId: string | null,
+): Promise<void> {
+  const user = await requireUser();
+  await assertProjectOwner(projectId, user.id);
+  if (designSystemId) {
+    const [row] = await db
+      .select({ id: schema.designSystem.id })
+      .from(schema.designSystem)
+      .where(
+        and(
+          eq(schema.designSystem.id, designSystemId),
+          eq(schema.designSystem.userId, user.id),
+        ),
+      )
+      .limit(1);
+    if (!row) throw new Error("system_not_found");
+  }
+  await db
+    .update(schema.project)
+    .set({ designSystemId, updatedAt: new Date() })
+    .where(eq(schema.project.id, projectId));
+  revalidatePath(`/p/${projectId}`);
+  revalidatePath(`/p/${projectId}/brand`);
+}
+
+export async function saveBrandAsSystemAction(
+  projectId: string,
+  name: string,
+): Promise<{ id: string }> {
+  const user = await requireUser();
+  await assertProjectOwner(projectId, user.id);
+  const [proj] = await db
+    .select({ brandTokens: schema.project.brandTokens })
+    .from(schema.project)
+    .where(eq(schema.project.id, projectId))
+    .limit(1);
+  if (!proj?.brandTokens) throw new Error("no_brand");
+  const id = rid("ds");
+  await db.insert(schema.designSystem).values({
+    id,
+    userId: user.id,
+    name: name.trim() || "Untitled system",
+    tokens: proj.brandTokens,
+  });
+  await db
+    .update(schema.project)
+    .set({ designSystemId: id, updatedAt: new Date() })
+    .where(eq(schema.project.id, projectId));
+  revalidatePath("/systems");
+  revalidatePath(`/p/${projectId}/brand`);
+  return { id };
 }
 
 export async function ingestBrandAction(

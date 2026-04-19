@@ -1,38 +1,50 @@
-import { createProject, deleteProject, getSessionUser, listProjectsWithPreview } from "@/lib/actions";
+import {
+  deleteProject,
+  getSessionUser,
+  listDesignSystems,
+  listProjectsWithPreview,
+} from "@/lib/actions";
 import { GuestLanding } from "@/components/home/guest-landing";
 import { HomeHeader } from "@/components/home/home-header";
-import { ProjectGrid } from "@/components/home/project-grid";
+import { HomeComposer } from "@/components/home/home-composer";
+import { ProjectsPanel } from "@/components/home/projects-panel";
 
 export default async function Home() {
   const user = await getSessionUser();
-
   if (!user) return <GuestLanding />;
 
-  const projects = await listProjectsWithPreview();
+  const [projects, systems] = await Promise.all([
+    listProjectsWithPreview(),
+    listDesignSystems(),
+  ]);
+
+  const systemCards = systems.map((s) => ({
+    id: s.id,
+    name: s.name,
+    palette: Array.isArray(s.tokens?.palette) ? (s.tokens.palette as string[]) : [],
+    mood: (s.tokens?.mood as string | undefined) ?? null,
+  }));
+
+  const systemOpts = systems.map((s) => ({ id: s.id, name: s.name }));
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#E8E0D0] text-[#1a1a1a]">
+    <div className="flex min-h-screen flex-col bg-[#E8E0D0] text-[#1a1a1a]">
       <HomeHeader userEmail={user.email} />
-      <main className="flex-1 px-10 pb-20">
-        <div className="mx-auto max-w-5xl">
-          <div className="flex items-end justify-between">
-            <div>
-              <p className="text-[11px] uppercase tracking-[0.22em] text-[#D9623A]">Workspace</p>
-              <h1 className="font-serif text-5xl leading-[1.05] tracking-tight mt-2">
-                Your projects
-              </h1>
-            </div>
-            <form action={async () => { "use server"; await createProject(); }}>
-              <button className="cd-hover-lift rounded-full bg-[#1a1a1a] px-4 py-2 text-sm text-[#F5F0E8] hover:bg-black">
-                + New project
-              </button>
-            </form>
-          </div>
-          <ProjectGrid
-            projects={projects}
-            onDelete={async (id: string) => { "use server"; await deleteProject(id); }}
-          />
-        </div>
+      <main className="flex flex-1 overflow-hidden">
+        <HomeComposer systems={systemOpts} />
+        <ProjectsPanel
+          projects={projects.map((p) => ({
+            id: p.id,
+            title: p.title,
+            outputType: p.outputType,
+            preview: p.preview,
+          }))}
+          systems={systemCards}
+          onDelete={async (id: string) => {
+            "use server";
+            await deleteProject(id);
+          }}
+        />
       </main>
     </div>
   );

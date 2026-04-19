@@ -1,15 +1,11 @@
 import { NextResponse } from "next/server";
 import {
   createAgentUIStreamResponse,
-  ToolLoopAgent,
-  stepCountIs,
   type InferAgentUIMessage,
 } from "ai";
-import { createOpenRouter } from "@openrouter/ai-sdk-provider";
 import { and, desc, eq } from "drizzle-orm";
-import { designAgent } from "@/lib/ai/agent";
+import { designAgent, buildDesignAgent } from "@/lib/ai/agent";
 import { SYSTEM_PROMPT } from "@/lib/ai/system";
-import { designTools } from "@/lib/ai/tools";
 import {
   brandTokensToPromptSection,
   type BrandTokens,
@@ -58,25 +54,28 @@ export async function POST(req: Request) {
   let turnVariant = 0;
   let firstVariantTitle: string | null = null;
 
-  // If this project has a brand applied, build a per-request agent with the
-  // brand tokens appended to the system instructions. Falls back to the
-  // singleton designAgent when brand is off.
-  const agent =
+  // Resolve design-system tokens if the project is linked to one. Brand
+  // tokens (per-project, ad-hoc) override a saved system when both are set.
+  let systemTokens: BrandTokens | null = null;
+  if (!(project.brandApply && project.brandTokens) && project.designSystemId) {
+    const [ds] = await db
+      .select({ tokens: schema.designSystem.tokens })
+      .from(schema.designSystem)
+      .where(eq(schema.designSystem.id, project.designSystemId))
+      .limit(1);
+    if (ds?.tokens) systemTokens = ds.tokens as BrandTokens;
+  }
+  const injected =
     project.brandApply && project.brandTokens
-      ? new ToolLoopAgent({
-          id: "opendesign",
-          model: createOpenRouter({
-            apiKey: process.env.OPENROUTER_API_KEY!,
-            appName: "OpenDesign",
-          }).chat("google/gemini-3-flash-preview"),
-          instructions:
-            SYSTEM_PROMPT +
-            "\n" +
-            brandTokensToPromptSection(project.brandTokens as BrandTokens),
-          tools: designTools,
-          stopWhen: stepCountIs(14),
-        })
-      : designAgent;
+      ? (project.brandTokens as BrandTokens)
+      : systemTokens;
+
+  const agent = injected
+    ? buildDesignAgent({
+        instructions:
+          SYSTEM_PROMPT + "\n" + brandTokensToPromptSection(injected),
+      })
+    : designAgent;
 
   return createAgentUIStreamResponse({
     agent,

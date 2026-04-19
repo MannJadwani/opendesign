@@ -3,6 +3,7 @@
 import { useRef, useState, type ClipboardEvent, type DragEvent, type FormEvent } from "react";
 import type { UIMessage } from "ai";
 import type { UseChatHelpers } from "@ai-sdk/react";
+import { DEFAULT_MODEL, getModelLabel } from "@/lib/ai/models";
 
 type Props = {
   status: UseChatHelpers<UIMessage>["status"];
@@ -146,7 +147,7 @@ export function Composer({ status, sendMessage, stop }: Props) {
             }}
           />
           <span className="inline-flex items-center gap-1.5 rounded-full border border-black/10 bg-[#F5F0E8] px-2.5 py-1 text-[11px] font-medium text-[#3D3831]">
-            Gemini 3 Flash
+            {getModelLabel(DEFAULT_MODEL)}
           </span>
         </div>
         {busy ? (

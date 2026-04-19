@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { getProject } from "@/lib/actions";
+import { getProject, listDesignSystems } from "@/lib/actions";
 import { BrandEditor } from "@/components/workspace/brand-editor";
 import type { BrandTokens } from "@/lib/ai/scrapers/brand-ingest";
 
@@ -10,7 +10,10 @@ export default async function BrandPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const project = await getProject(id);
+  const [project, systems] = await Promise.all([
+    getProject(id),
+    listDesignSystems(),
+  ]);
   if (!project) notFound();
 
   const tokens = (project.brandTokens as BrandTokens | null) ?? null;
@@ -42,6 +45,8 @@ export default async function BrandPage({
           projectId={id}
           initialTokens={tokens}
           initialApply={project.brandApply}
+          systems={systems.map((s) => ({ id: s.id, name: s.name }))}
+          initialSystemId={project.designSystemId ?? null}
         />
       </main>
     </div>
