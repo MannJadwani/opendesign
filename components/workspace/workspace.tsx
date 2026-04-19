@@ -24,6 +24,7 @@ type Props = {
   initialShareSlug: string | null;
   createShareAction: (projectId: string) => Promise<{ slug: string }>;
   revokeShareAction: (projectId: string) => Promise<void>;
+  brandApply: boolean;
 };
 
 export function Workspace({
@@ -35,6 +36,7 @@ export function Workspace({
   initialShareSlug,
   createShareAction,
   revokeShareAction,
+  brandApply,
 }: Props) {
   const [fullscreen, setFullscreen] = useState(false);
   const iframeRef = useRef<HTMLIFrameElement | null>(null);
@@ -82,6 +84,7 @@ export function Workspace({
         revokeShareAction={revokeShareAction}
         artifact={artifact}
         iframeRef={iframeRef}
+        brandApply={brandApply}
       />
       <main
         className="cd-animate-cols grid flex-1 overflow-hidden"
@@ -126,6 +129,7 @@ export function Workspace({
           onExplore={() => {
             chat.sendMessage({
               text: "Generate 3 genuinely distinct alternative directions for this artifact — different layout, palette, and vibe for each. Not cosmetic tweaks. Emit all 3 as separate artifacts in this turn.",
+              metadata: { intent: "explore" },
             });
           }}
           onApplyComment={(c: CommentRow) => {

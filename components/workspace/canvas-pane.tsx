@@ -468,14 +468,14 @@ export function CanvasPane({
             }}
           />
         )}
-        {!editMode && artifact && (artifact.controls?.length ?? 0) > 0 && (
-          <ControlsPanel
-            iframeRef={iframeRef}
-            controls={artifact.controls}
-            onRegenerate={onRegenerateFromControls}
-          />
-        )}
       </div>
+      {!editMode && artifact && (artifact.controls?.length ?? 0) > 0 && (
+        <ControlsPanel
+          iframeRef={iframeRef}
+          controls={artifact.controls}
+          onRegenerate={onRegenerateFromControls}
+        />
+      )}
     </section>
   );
 }

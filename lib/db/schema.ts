@@ -71,6 +71,8 @@ export const project = pgTable(
     title: text("title").notNull().default("Untitled"),
     outputType: text("output_type").notNull().default("website"), // website|mobile|slides|carousel|wireframe
     designSystemId: text("design_system_id"),
+    brandTokens: jsonb("brand_tokens"), // { palette, typography, layout, mood, notes, sourceUrl?, sourceImage? }
+    brandApply: boolean("brand_apply").notNull().default(false),
     createdAt: timestamp("created_at").notNull().defaultNow(),
     updatedAt: timestamp("updated_at").notNull().defaultNow(),
   },

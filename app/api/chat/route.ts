@@ -1,10 +1,19 @@
 import { NextResponse } from "next/server";
 import {
   createAgentUIStreamResponse,
+  ToolLoopAgent,
+  stepCountIs,
   type InferAgentUIMessage,
 } from "ai";
+import { createOpenRouter } from "@openrouter/ai-sdk-provider";
 import { and, desc, eq } from "drizzle-orm";
 import { designAgent } from "@/lib/ai/agent";
+import { SYSTEM_PROMPT } from "@/lib/ai/system";
+import { designTools } from "@/lib/ai/tools";
+import {
+  brandTokensToPromptSection,
+  type BrandTokens,
+} from "@/lib/ai/scrapers/brand-ingest";
 import { db, schema } from "@/lib/db";
 import { requireUser } from "@/lib/actions";
 import { rid } from "@/lib/util/id";
@@ -49,8 +58,28 @@ export async function POST(req: Request) {
   let turnVariant = 0;
   let firstVariantTitle: string | null = null;
 
+  // If this project has a brand applied, build a per-request agent with the
+  // brand tokens appended to the system instructions. Falls back to the
+  // singleton designAgent when brand is off.
+  const agent =
+    project.brandApply && project.brandTokens
+      ? new ToolLoopAgent({
+          id: "opendesign",
+          model: createOpenRouter({
+            apiKey: process.env.OPENROUTER_API_KEY!,
+            appName: "OpenDesign",
+          }).chat("google/gemini-3-flash-preview"),
+          instructions:
+            SYSTEM_PROMPT +
+            "\n" +
+            brandTokensToPromptSection(project.brandTokens as BrandTokens),
+          tools: designTools,
+          stopWhen: stepCountIs(14),
+        })
+      : designAgent;
+
   return createAgentUIStreamResponse({
-    agent: designAgent,
+    agent,
     uiMessages: messages,
     onStepFinish: async ({ toolCalls, toolResults }) => {
       const emits = (toolCalls ?? []).filter(

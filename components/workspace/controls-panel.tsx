@@ -40,8 +40,6 @@ export function ControlsPanel({ iframeRef, controls, onRegenerate }: Props) {
 
   if (controls.length === 0) return null;
 
-  const grouped = groupByTarget(controls);
-
   function setAndPush(c: ArtifactControl, n: number) {
     setValues((prev) => ({ ...prev, [c.id]: n }));
     const frame = iframeRef.current;
@@ -62,45 +60,31 @@ export function ControlsPanel({ iframeRef, controls, onRegenerate }: Props) {
   const dirty = controls.some((c) => (values[c.id] ?? c.current) !== c.current);
 
   return (
-    <aside className="cd-enter-slide-right flex w-[260px] flex-col border-l border-black/5 bg-[#FAF6EF] text-[12px] text-[#3D3831]">
-      <div className="flex items-center justify-between border-b border-black/5 px-3 py-2">
-        <div>
-          <p className="font-medium text-[#1F1B16]">Controls</p>
-          <p className="text-[10px] uppercase tracking-wide text-[#9A9389]">
-            {controls.length} slider{controls.length === 1 ? "" : "s"}
-          </p>
-        </div>
-        <button
-          type="button"
-          onClick={regenerate}
-          disabled={!dirty}
-          className="rounded-md bg-[#D9623A] px-2 py-1 text-[10px] font-medium text-white hover:bg-[#C0462A] disabled:cursor-not-allowed disabled:opacity-50"
-          title="Ask Claude to regenerate using these values"
-        >
-          Regenerate
-        </button>
+    <div className="cd-enter-fade flex shrink-0 items-center gap-3 border-t border-black/5 bg-[#FAF6EF]/90 px-3 py-2 text-[12px] text-[#3D3831]">
+      <div className="shrink-0 text-[10px] uppercase tracking-wide text-[#9A9389]">
+        Controls · {controls.length}
       </div>
-      <div className="flex-1 space-y-4 overflow-y-auto px-3 py-3">
-        {Object.entries(grouped).map(([target, group]) => (
-          <div key={target}>
-            <p className="mb-1.5 text-[10px] uppercase tracking-wide text-[#9A9389]">
-              {target}
-            </p>
-            <div className="space-y-2.5">
-              {group.map((c) => (
-                <Slider
-                  key={c.id}
-                  control={c}
-                  value={values[c.id] ?? c.current}
-                  onChange={(n) => setAndPush(c, n)}
-                  onReset={() => setAndPush(c, c.current)}
-                />
-              ))}
-            </div>
-          </div>
+      <div className="flex min-w-0 flex-1 items-center gap-4 overflow-x-auto">
+        {controls.map((c) => (
+          <Slider
+            key={c.id}
+            control={c}
+            value={values[c.id] ?? c.current}
+            onChange={(n) => setAndPush(c, n)}
+            onReset={() => setAndPush(c, c.current)}
+          />
         ))}
       </div>
-    </aside>
+      <button
+        type="button"
+        onClick={regenerate}
+        disabled={!dirty}
+        className="shrink-0 rounded-md bg-[#D9623A] px-2 py-1 text-[10px] font-medium text-white hover:bg-[#C0462A] disabled:cursor-not-allowed disabled:opacity-50"
+        title="Ask Claude to regenerate using these values"
+      >
+        Regenerate
+      </button>
+    </div>
   );
 }
 
@@ -117,28 +101,13 @@ function Slider({
 }) {
   const unit = control.unit && control.unit !== "none" ? control.unit : "";
   return (
-    <div>
-      <div className="flex items-center justify-between">
-        <span className="text-[11px] font-medium text-[#1F1B16]">
-          {control.label}
-        </span>
-        <span className="flex items-center gap-1.5">
-          <span className="tabular-nums text-[11px] text-[#6B655D]">
-            {formatNumber(value)}
-            {unit}
-          </span>
-          {value !== control.current && (
-            <button
-              type="button"
-              onClick={onReset}
-              className="rounded px-1 text-[10px] text-[#9A9389] hover:text-[#D9623A]"
-              title="Reset to emit default"
-            >
-              ↺
-            </button>
-          )}
-        </span>
-      </div>
+    <div
+      className="flex min-w-[180px] shrink-0 items-center gap-2"
+      title={`${control.target} · ${control.label}`}
+    >
+      <span className="shrink-0 truncate text-[11px] font-medium text-[#1F1B16]">
+        {control.label}
+      </span>
       <input
         type="range"
         min={control.min}
@@ -146,8 +115,22 @@ function Slider({
         step={control.step}
         value={value}
         onChange={(e) => onChange(Number(e.target.value))}
-        className="mt-1.5 w-full accent-[#D9623A]"
+        className="min-w-0 flex-1 accent-[#D9623A]"
       />
+      <span className="shrink-0 tabular-nums text-[11px] text-[#6B655D]">
+        {formatNumber(value)}
+        {unit}
+      </span>
+      {value !== control.current && (
+        <button
+          type="button"
+          onClick={onReset}
+          className="shrink-0 rounded px-1 text-[10px] text-[#9A9389] hover:text-[#D9623A]"
+          title="Reset to emit default"
+        >
+          ↺
+        </button>
+      )}
     </div>
   );
 }
@@ -155,16 +138,6 @@ function Slider({
 function formatNumber(n: number): string {
   if (Number.isInteger(n)) return String(n);
   return n.toFixed(2).replace(/\.?0+$/, "");
-}
-
-function groupByTarget(
-  controls: ArtifactControl[],
-): Record<string, ArtifactControl[]> {
-  const out: Record<string, ArtifactControl[]> = {};
-  for (const c of controls) {
-    (out[c.target] ??= []).push(c);
-  }
-  return out;
 }
 
 function post(

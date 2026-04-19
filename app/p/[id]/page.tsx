@@ -63,6 +63,7 @@ export default async function ProjectPage({
       initialMessages={initialMessages}
       initialArtifacts={initialArtifacts}
       initialShareSlug={shareSlug}
+      brandApply={project.brandApply}
       createShareAction={async (pid: string) => {
         "use server";
         return getOrCreateShareLink(pid);

@@ -4,6 +4,17 @@ import { Markdown } from "./markdown";
 
 export function MessageBubble({ message }: { message: UIMessage }) {
   const isUser = message.role === "user";
+  const intent = (message.metadata as { intent?: string } | undefined)?.intent;
+  if (isUser && intent === "explore") {
+    return (
+      <div className="cd-enter-fade flex justify-end">
+        <div className="flex items-center gap-2 rounded-full border border-[#D9623A]/40 bg-[#D9623A]/10 px-3 py-1.5 text-[12px] font-medium text-[#D9623A]">
+          <span aria-hidden>✦</span>
+          <span>Exploring 3 alternative directions</span>
+        </div>
+      </div>
+    );
+  }
   return (
     <div className={`cd-enter-fade ${isUser ? "flex justify-end" : ""}`}>
       <div

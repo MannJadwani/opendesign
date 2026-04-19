@@ -240,6 +240,49 @@ export async function saveEditedArtifact(
   return { id, version };
 }
 
+export async function ingestBrandAction(
+  projectId: string,
+  input: { kind: "site" | "image"; url: string },
+): Promise<{ ok: true; tokens: import("@/lib/ai/scrapers/brand-ingest").BrandTokens }> {
+  const user = await requireUser();
+  await assertProjectOwner(projectId, user.id);
+  const url = input.url.trim();
+  if (!/^https?:\/\//i.test(url)) throw new Error("invalid_url");
+  const { ingestFromSite, ingestFromImage } = await import(
+    "@/lib/ai/scrapers/brand-ingest"
+  );
+  const tokens =
+    input.kind === "site" ? await ingestFromSite(url) : await ingestFromImage(url);
+  await db
+    .update(schema.project)
+    .set({ brandTokens: tokens, brandApply: true, updatedAt: new Date() })
+    .where(eq(schema.project.id, projectId));
+  revalidatePath(`/p/${projectId}`);
+  revalidatePath(`/p/${projectId}/brand`);
+  return { ok: true, tokens };
+}
+
+export async function setBrandApplyAction(projectId: string, on: boolean) {
+  const user = await requireUser();
+  await assertProjectOwner(projectId, user.id);
+  await db
+    .update(schema.project)
+    .set({ brandApply: on, updatedAt: new Date() })
+    .where(eq(schema.project.id, projectId));
+  revalidatePath(`/p/${projectId}`);
+}
+
+export async function clearBrandAction(projectId: string) {
+  const user = await requireUser();
+  await assertProjectOwner(projectId, user.id);
+  await db
+    .update(schema.project)
+    .set({ brandTokens: null, brandApply: false, updatedAt: new Date() })
+    .where(eq(schema.project.id, projectId));
+  revalidatePath(`/p/${projectId}`);
+  revalidatePath(`/p/${projectId}/brand`);
+}
+
 export async function getArtifactIdsForVersion(
   projectId: string,
   version: number,
