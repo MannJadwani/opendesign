@@ -19,7 +19,9 @@ export function buildDesignAgent({
   });
   return new ToolLoopAgent({
     id: "opendesign",
-    model: openrouter.chat(modelId),
+    model: openrouter.chat(modelId, {
+      extraBody: { transforms: [] },
+    }),
     instructions,
     tools: buildDesignTools({ apiKey }),
     stopWhen: [stepCountIs(14), hasToolCall("ask_intake_questions")],

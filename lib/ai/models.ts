@@ -36,7 +36,7 @@ export const MODEL_OPTIONS: ModelOption[] = [
   },
 ];
 
-export const DEFAULT_MODEL: ModelId = "google/gemini-3-flash-preview";
+export const DEFAULT_MODEL: ModelId = "anthropic/claude-sonnet-4.6";
 
 // Vision tasks (interpret-image, brand ingest). Same default for now — split
 // when we want a cheaper dedicated vision model.

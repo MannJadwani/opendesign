@@ -35,7 +35,9 @@ export async function interpretImageUrl(
     apiKey: opts.apiKey ?? process.env.OPENROUTER_API_KEY!,
     appName: "OpenDesign",
   });
-  const visionModel = openrouter.chat(opts.modelId ?? VISION_MODEL);
+  const visionModel = openrouter.chat(opts.modelId ?? VISION_MODEL, {
+    extraBody: { transforms: [] },
+  });
   const focusPrompt: Record<typeof focus, string> = {
     layout: "Focus on layout posture, grid structure, and proportions.",
     typography: "Focus on typefaces, weights, and typographic rhythm.",
