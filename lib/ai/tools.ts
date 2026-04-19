@@ -1,70 +1,111 @@
 import { tool } from "ai";
 import { z } from "zod";
-
-// P1 stubs. Replace with real Apify MCP + image pipeline in P1.5.
+import { searchPinterest as pinterestSearch } from "./scrapers/pinterest";
+import { searchDdgImages } from "./scrapers/ddg-images";
+import { fetchImageMeta } from "./scrapers/fetch-image";
+import { interpretImageUrl } from "./scrapers/interpret-image";
+import { searchComponentsIndex } from "./components-index";
+import { cacheKey, getCached, setCached } from "./cache";
+import type { Pin } from "./scrapers/pinterest";
+import type { FetchedImage } from "./scrapers/fetch-image";
+import type { ImageInterpretation } from "./scrapers/interpret-image";
 
 export const searchPinterest = tool({
   description:
-    "Research visual references on Pinterest. Use sparingly; prefer 1–2 focused queries. Returns pin summaries (title, dominant colors, tags, image url).",
+    "Research visual references on Pinterest (falls back to DuckDuckGo Images). Use sparingly; prefer 1–2 focused queries. Returns pin summaries (title, dominant color, image url, source link).",
   inputSchema: z.object({
     query: z.string().describe("Natural-language visual query. Be specific."),
     limit: z.number().int().min(1).max(12).default(6),
   }),
   execute: async ({ query, limit }) => {
-    return {
-      query,
-      pins: Array.from({ length: Math.min(limit, 3) }).map((_, i) => ({
-        id: `stub_${i}`,
-        title: `${query} — reference ${i + 1}`,
-        colors: ["#1F1B16", "#D9623A", "#F5F0E8"],
-        tags: ["editorial", "minimal"],
-        image: "https://placehold.co/600x800/png",
-      })),
-      note: "stub — wire Apify MCP in P1.5",
-    };
+    const key = cacheKey("search_pinterest", { query, limit });
+    const hit = await getCached<{ query: string; pins: Pin[]; source: string }>(key);
+    if (hit) return { ...hit, cached: true };
+
+    let pins: Pin[] = [];
+    let source = "ddg";
+    try {
+      pins = await searchDdgImages(query, limit);
+    } catch (e) {
+      console.warn("[search_pinterest] ddg failed", e);
+    }
+    if (pins.length === 0) {
+      try {
+        pins = await pinterestSearch(query, limit);
+        source = "pinterest";
+      } catch (e) {
+        console.warn("[search_pinterest] pinterest failed", e);
+      }
+    }
+
+    const result = { query, pins, source };
+    if (pins.length > 0) await setCached(key, result);
+    return { ...result, cached: false };
   },
 });
 
 export const searchComponents = tool({
   description:
-    "Find UI component/pattern references (hero, nav, card, pricing, etc.). Returns curated HTML/CSS patterns.",
+    "Search a curated local index of UI patterns (hero, nav, pricing, footer, faq, cta, mobile-hero, gallery, testimonial, features, social-proof). Returns 0-5 named patterns with taste tags, notes, and a skeletal HTML snippet. Does NOT hit the network.",
   inputSchema: z.object({
-    pattern: z.string().describe("Component pattern name."),
-    vibe: z.string().optional(),
+    pattern: z
+      .string()
+      .describe("Pattern name — e.g. 'hero', 'nav', 'pricing', 'footer', 'mobile-hero'."),
+    vibe: z
+      .string()
+      .optional()
+      .describe("Optional taste tag — 'editorial', 'brutalist', 'saas', 'terminal', 'minimal', etc."),
   }),
-  execute: async ({ pattern, vibe }) => ({
-    pattern,
-    vibe: vibe ?? null,
-    hits: [{ name: `${pattern} — classic`, notes: "stub" }],
-  }),
+  execute: async ({ pattern, vibe }) => {
+    const hits = searchComponentsIndex(pattern, vibe);
+    return { pattern, vibe: vibe ?? null, count: hits.length, hits };
+  },
 });
 
 export const fetchImage = tool({
-  description: "Fetch an image URL's metadata (dimensions, palette).",
+  description:
+    "Fetch an image URL and return its metadata (dimensions, aspect ratio, content type, byte size). Use before interpret_image to confirm the image is reachable and reasonable.",
   inputSchema: z.object({ url: z.string().url() }),
-  execute: async ({ url }) => ({
-    url,
-    width: 0,
-    height: 0,
-    palette: ["#1F1B16"],
-    note: "stub",
-  }),
+  execute: async ({ url }): Promise<FetchedImage | { url: string; error: string }> => {
+    const key = cacheKey("fetch_image", { url });
+    const hit = await getCached<FetchedImage>(key);
+    if (hit) return hit;
+    try {
+      const meta = await fetchImageMeta(url);
+      await setCached(key, meta);
+      return meta;
+    } catch (e) {
+      return { url, error: e instanceof Error ? e.message : String(e) };
+    }
+  },
 });
 
 export const interpretImage = tool({
   description:
-    "Vision interpretation of an image. Returns semantic notes usable in synthesis.",
+    "Vision interpretation of an image URL. Returns summary, palette (hex), typography, layout posture, mood, and which parts of a new design could borrow from it.",
   inputSchema: z.object({
     url: z.string().url(),
     focus: z
       .enum(["layout", "typography", "color", "overall"])
       .default("overall"),
   }),
-  execute: async ({ url, focus }) => ({
-    url,
-    focus,
-    notes: "stub interpretation",
-  }),
+  execute: async ({ url, focus }) => {
+    const key = cacheKey("interpret_image", { url, focus });
+    const hit = await getCached<ImageInterpretation & { url: string; focus: string }>(key);
+    if (hit) return hit;
+    try {
+      const notes = await interpretImageUrl(url, focus);
+      const result = { url, focus, ...notes };
+      await setCached(key, result);
+      return result;
+    } catch (e) {
+      return {
+        url,
+        focus,
+        error: e instanceof Error ? e.message : String(e),
+      };
+    }
+  },
 });
 
 export const synthesizeConcept = tool({
@@ -85,13 +126,24 @@ export const synthesizeConcept = tool({
 
 export const applyDesignSystem = tool({
   description:
-    "Apply a saved design system's tokens to the in-progress concept.",
+    "Load a saved design system by id and return its tokens (colors, type, spacing, radius). Call only when the user has referenced a specific saved system. If not found, returns applied:false.",
   inputSchema: z.object({ designSystemId: z.string() }),
-  execute: async ({ designSystemId }) => ({
-    designSystemId,
-    applied: false,
-    note: "stub",
-  }),
+  execute: async ({ designSystemId }) => {
+    const { db, schema } = await import("@/lib/db");
+    const { eq } = await import("drizzle-orm");
+    const [row] = await db
+      .select()
+      .from(schema.designSystem)
+      .where(eq(schema.designSystem.id, designSystemId))
+      .limit(1);
+    if (!row) return { designSystemId, applied: false, reason: "not_found" };
+    return {
+      designSystemId,
+      applied: true,
+      name: row.name,
+      tokens: row.tokens,
+    };
+  },
 });
 
 export const emitArtifact = tool({
