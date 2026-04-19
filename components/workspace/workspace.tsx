@@ -123,6 +123,11 @@ export function Workspace({
           onRegenerateFromControls={(summary: string) => {
             chat.sendMessage({ text: summary });
           }}
+          onExplore={() => {
+            chat.sendMessage({
+              text: "Generate 3 genuinely distinct alternative directions for this artifact — different layout, palette, and vibe for each. Not cosmetic tweaks. Emit all 3 as separate artifacts in this turn.",
+            });
+          }}
           onApplyComment={(c: CommentRow) => {
             const anchor = c.anchor
               ? `data-cd-id="${c.anchor}"`

@@ -17,6 +17,8 @@ type Props = {
   commentMode: boolean;
   onToggleComment: () => void;
   canComment: boolean;
+  onExplore: () => void;
+  canExplore: boolean;
 };
 
 export function CanvasHeader({
@@ -34,6 +36,8 @@ export function CanvasHeader({
   commentMode,
   onToggleComment,
   canComment,
+  onExplore,
+  canExplore,
 }: Props) {
   return (
     <div className="flex items-center justify-between border-b border-black/5 bg-[#F5F0E8]/80 px-4 py-2">
@@ -55,6 +59,16 @@ export function CanvasHeader({
         )}
       </div>
       <div className="flex items-center gap-1.5">
+        <button
+          type="button"
+          onClick={onExplore}
+          disabled={!canExplore}
+          title={canExplore ? "Ask Claude for 3 alternative directions" : "Available once an artifact is rendered"}
+          className="flex items-center gap-1.5 rounded-md border border-black/10 bg-white px-2 py-1 text-[11px] font-medium text-[#3D3831] hover:bg-[#FAF6EF] disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          <span aria-hidden>✦</span>
+          <span>Explore</span>
+        </button>
         <button
           type="button"
           onClick={onToggleEdit}

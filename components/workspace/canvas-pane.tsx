@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type RefObject } fro
 import type { ArtifactVariant, InitialArtifact } from "./workspace";
 import { CanvasHeader, type DeviceMode } from "./canvas-header";
 import { CanvasPlaceholder } from "./canvas-placeholder";
-import { VariantTabs } from "./variant-tabs";
+import { VariantStrip } from "./variant-strip";
 import { EditBar } from "./edit-bar";
 import { Inspector, type InspectorSelection } from "./inspector";
 import { injectEditorScript } from "@/lib/workspace/editor-inject";
@@ -33,6 +33,7 @@ type Props = {
   iframeRef: RefObject<HTMLIFrameElement | null>;
   onApplyComment: (comment: CommentRow) => void;
   onRegenerateFromControls: (summary: string) => void;
+  onExplore: () => void;
 };
 
 export function CanvasPane({
@@ -48,10 +49,12 @@ export function CanvasPane({
   iframeRef,
   onApplyComment,
   onRegenerateFromControls,
+  onExplore,
 }: Props) {
   const [device, setDevice] = useState<DeviceMode>("desktop");
   const [editMode, setEditMode] = useState(false);
   const [commentMode, setCommentMode] = useState(false);
+  const [compareIndex, setCompareIndex] = useState<number | null>(null);
   const [dirty, setDirty] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
@@ -345,12 +348,21 @@ export function CanvasPane({
           setPending(null);
         }}
         canComment={!!artifact?.id && !streaming}
+        onExplore={onExplore}
+        canExplore={!!artifact && !streaming}
       />
       {variants.length > 1 && (
-        <VariantTabs
+        <VariantStrip
           variants={variants}
           activeIndex={activeIndex}
-          onSelect={onSelectVariant}
+          onSelect={(i) => {
+            onSelectVariant(i);
+            if (compareIndex === i) setCompareIndex(null);
+          }}
+          compareIndex={compareIndex}
+          onToggleCompare={(i) =>
+            setCompareIndex((cur) => (cur === i || i === activeIndex ? null : i))
+          }
         />
       )}
       {editMode && artifact && (
@@ -388,6 +400,34 @@ export function CanvasPane({
                       onApply={onApplyCommentCb}
                     />
                   </div>
+                </div>
+              </div>
+            ) : compareIndex !== null && variants[compareIndex] && !editMode && !commentMode ? (
+              <div className="flex min-w-0 flex-1 gap-0 divide-x divide-black/10">
+                <div className="relative flex min-w-0 flex-1 flex-col">
+                  <div className="border-b border-black/5 bg-[#F5F0E8]/80 px-3 py-1 text-[10px] font-medium uppercase tracking-wide text-[#6B655D]">
+                    {variants[activeIndex]?.title?.trim() || `Variant ${activeIndex + 1}`}
+                  </div>
+                  <iframe
+                    ref={iframeRef}
+                    key={`active-${artifact.version}-${artifact.variant}`}
+                    title={artifact.title ?? "artifact"}
+                    srcDoc={srcDoc}
+                    sandbox="allow-scripts allow-same-origin"
+                    className="h-full w-full bg-white"
+                  />
+                </div>
+                <div className="relative flex min-w-0 flex-1 flex-col">
+                  <div className="border-b border-black/5 bg-[#F5F0E8]/80 px-3 py-1 text-[10px] font-medium uppercase tracking-wide text-[#D9623A]">
+                    {variants[compareIndex].title?.trim() || `Variant ${compareIndex + 1}`} · vs
+                  </div>
+                  <iframe
+                    key={`compare-${variants[compareIndex].version}-${variants[compareIndex].variant}`}
+                    title={variants[compareIndex].title ?? "compare"}
+                    srcDoc={injectEditorScript(variants[compareIndex].html)}
+                    sandbox="allow-scripts allow-same-origin"
+                    className="h-full w-full bg-white"
+                  />
                 </div>
               </div>
             ) : (
