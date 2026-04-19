@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { asc, desc, eq } from "drizzle-orm";
 import { Workspace } from "@/components/workspace/workspace";
-import { getApiKeyStatus, getProject, getSessionUser } from "@/lib/actions";
+import { getApiKeyStatus, getProject, getSessionUser, getUserSettings } from "@/lib/actions";
 
 export async function generateMetadata({
   params,
@@ -31,10 +31,11 @@ export default async function ProjectPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const [project, user, keyStatus] = await Promise.all([
+  const [project, user, keyStatus, userSettings] = await Promise.all([
     getProject(id),
     getSessionUser(),
     getApiKeyStatus(),
+    getUserSettings(),
   ]);
   if (!project) notFound();
 
@@ -84,6 +85,8 @@ export default async function ProjectPage({
       brandApply={project.brandApply}
       outputType={project.outputType}
       needsApiKey={!keyStatus.hasAnyKey}
+      selectedModelId={userSettings.selectedModelId}
+      customModels={userSettings.customModels}
       createShareAction={async (pid: string) => {
         "use server";
         return getOrCreateShareLink(pid);

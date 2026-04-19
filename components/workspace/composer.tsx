@@ -1,27 +1,69 @@
 "use client";
 
-import { useRef, useState, type ClipboardEvent, type DragEvent, type FormEvent } from "react";
+import { useEffect, useRef, useState, useTransition, type ClipboardEvent, type DragEvent, type FormEvent } from "react";
 import type { UIMessage } from "ai";
 import type { UseChatHelpers } from "@ai-sdk/react";
-import { DEFAULT_MODEL, getModelLabel } from "@/lib/ai/models";
+import { DEFAULT_MODEL, MODEL_OPTIONS, getModelLabel } from "@/lib/ai/models";
+import { setSelectedModelAction } from "@/lib/actions";
 
 type Props = {
   status: UseChatHelpers<UIMessage>["status"];
   sendMessage: UseChatHelpers<UIMessage>["sendMessage"];
   stop: UseChatHelpers<UIMessage>["stop"];
   needsApiKey?: boolean;
+  selectedModelId?: string | null;
+  customModels?: { id: string; label: string }[];
 };
 
 const MAX_FILE_BYTES = 4_000_000;
 const MAX_FILES = 4;
 
-export function Composer({ status, sendMessage, stop, needsApiKey = false }: Props) {
+export function Composer({
+  status,
+  sendMessage,
+  stop,
+  needsApiKey = false,
+  selectedModelId = null,
+  customModels = [],
+}: Props) {
   const [text, setText] = useState("");
   const [files, setFiles] = useState<File[]>([]);
   const [dragOver, setDragOver] = useState(false);
   const [rejectMsg, setRejectMsg] = useState<string | null>(null);
   const pickerRef = useRef<HTMLInputElement>(null);
+  const [modelId, setModelId] = useState<string>(selectedModelId ?? DEFAULT_MODEL);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const [, startTransition] = useTransition();
   const busy = status === "streaming" || status === "submitted";
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    function onDoc(e: MouseEvent) {
+      if (!menuRef.current?.contains(e.target as Node)) setMenuOpen(false);
+    }
+    document.addEventListener("mousedown", onDoc);
+    return () => document.removeEventListener("mousedown", onDoc);
+  }, [menuOpen]);
+
+  const allModels = [
+    ...MODEL_OPTIONS.map((m) => ({ id: m.id, label: m.label, meta: m.vendor })),
+    ...customModels.map((m) => ({ id: m.id, label: m.label, meta: "Custom" })),
+  ];
+  const currentLabel =
+    allModels.find((m) => m.id === modelId)?.label ?? getModelLabel(modelId);
+
+  function pickModel(id: string) {
+    setModelId(id);
+    setMenuOpen(false);
+    startTransition(async () => {
+      try {
+        await setSelectedModelAction(id);
+      } catch {
+        // swallow — UI stays optimistic
+      }
+    });
+  }
 
   function addFiles(incoming: File[]) {
     const filtered: File[] = [];
@@ -147,9 +189,42 @@ export function Composer({ status, sendMessage, stop, needsApiKey = false }: Pro
               e.target.value = "";
             }}
           />
-          <span className="inline-flex items-center gap-1.5 rounded-full border border-black/10 bg-[#F5F0E8] px-2.5 py-1 text-[11px] font-medium text-[#3D3831]">
-            {getModelLabel(DEFAULT_MODEL)}
-          </span>
+          <div ref={menuRef} className="relative">
+            <button
+              type="button"
+              onClick={() => setMenuOpen((v) => !v)}
+              className="inline-flex items-center gap-1.5 rounded-full border border-black/10 bg-[#F5F0E8] px-2.5 py-1 text-[11px] font-medium text-[#3D3831] hover:border-black/20"
+            >
+              {currentLabel}
+              <svg width="10" height="10" viewBox="0 0 12 12" fill="none">
+                <path d="M3 4.5 6 7.5 9 4.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </button>
+            {menuOpen && (
+              <div className="absolute bottom-[calc(100%+6px)] left-0 z-20 min-w-[220px] overflow-hidden rounded-xl border border-black/10 bg-white shadow-[0_8px_24px_rgba(0,0,0,0.08)]">
+                {allModels.map((m) => (
+                  <button
+                    key={m.id}
+                    type="button"
+                    onClick={() => pickModel(m.id)}
+                    className={`flex w-full items-start justify-between gap-2 px-3 py-2 text-left text-[12px] hover:bg-[#F5F0E8] ${
+                      m.id === modelId ? "bg-[#FDEFE8]/60" : ""
+                    }`}
+                  >
+                    <div>
+                      <p className="font-medium text-[#1F1B16]">{m.label}</p>
+                      <p className="mt-0.5 font-mono text-[10px] text-[#6B655D]">{m.meta}</p>
+                    </div>
+                    {m.id === modelId && (
+                      <span className="mt-0.5 rounded-full bg-[#D9623A] px-1.5 py-0.5 text-[9px] font-medium uppercase tracking-wide text-white">
+                        On
+                      </span>
+                    )}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
         {busy ? (
           <button

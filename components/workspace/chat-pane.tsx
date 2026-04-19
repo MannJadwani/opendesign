@@ -15,6 +15,8 @@ type Props = {
   stop: UseChatHelpers<UIMessage>["stop"];
   clearError: UseChatHelpers<UIMessage>["clearError"];
   needsApiKey?: boolean;
+  selectedModelId?: string | null;
+  customModels?: { id: string; label: string }[];
 };
 
 export function ChatPane({
@@ -25,6 +27,8 @@ export function ChatPane({
   stop,
   clearError,
   needsApiKey = false,
+  selectedModelId = null,
+  customModels = [],
 }: Props) {
   const showThinking = status === "submitted" || status === "streaming";
 
@@ -45,6 +49,8 @@ export function ChatPane({
         sendMessage={sendMessage}
         stop={stop}
         needsApiKey={needsApiKey}
+        selectedModelId={selectedModelId}
+        customModels={customModels}
       />
     </aside>
   );

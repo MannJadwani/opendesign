@@ -28,6 +28,8 @@ type Props = {
   brandApply: boolean;
   outputType: string;
   needsApiKey?: boolean;
+  selectedModelId?: string | null;
+  customModels?: { id: string; label: string }[];
 };
 
 export function Workspace({
@@ -42,6 +44,8 @@ export function Workspace({
   brandApply,
   outputType,
   needsApiKey = false,
+  selectedModelId = null,
+  customModels = [],
 }: Props) {
   const [fullscreen, setFullscreen] = useState(false);
   const [mobileView, setMobileView] = useState<"chat" | "canvas">("canvas");
@@ -136,6 +140,8 @@ export function Workspace({
             sendMessage={chat.sendMessage}
             stop={chat.stop}
             clearError={chat.clearError}
+            selectedModelId={selectedModelId}
+            customModels={customModels}
           />
         </div>
         <div
