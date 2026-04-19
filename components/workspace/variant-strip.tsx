@@ -9,6 +9,8 @@ type Props = {
   onSelect: (i: number) => void;
   compareIndex: number | null;
   onToggleCompare: (i: number) => void;
+  onContinueWith?: (i: number) => void;
+  canContinue?: boolean;
 };
 
 // Scaled live-iframe thumbnails. Each thumb renders the variant's HTML at 25%
@@ -20,12 +22,25 @@ export function VariantStrip({
   onSelect,
   compareIndex,
   onToggleCompare,
+  onContinueWith,
+  canContinue = false,
 }: Props) {
   return (
     <div className="cd-enter-fade flex items-center gap-2 overflow-x-auto border-b border-black/5 bg-[#F5F0E8]/80 px-3 py-2">
       <span className="shrink-0 text-[11px] uppercase tracking-wide text-[#9A9389]">
         Variants · {variants.length}
       </span>
+      {onContinueWith && variants.length > 1 && (
+        <button
+          type="button"
+          onClick={() => onContinueWith(activeIndex)}
+          disabled={!canContinue}
+          title="Iterate only on this variant — discard the other alternatives"
+          className="shrink-0 rounded-md border border-[#D9623A] bg-[#D9623A] px-2 py-1 text-[11px] font-medium text-white hover:bg-[#C0462A] disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          Continue with this →
+        </button>
+      )}
       {variants.map((v, i) => {
         const active = i === activeIndex;
         const compared = compareIndex === i;

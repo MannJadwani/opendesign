@@ -6,6 +6,7 @@ import { DefaultChatTransport, type UIMessage } from "ai";
 import { TopBar } from "./top-bar";
 import { ChatPane } from "./chat-pane";
 import { CanvasPane } from "./canvas-pane";
+import { ApiKeyGateBanner } from "@/components/api-key-gate-banner";
 import { type CommentRow } from "@/lib/actions";
 import {
   useArtifacts,
@@ -26,6 +27,7 @@ type Props = {
   revokeShareAction: (projectId: string) => Promise<void>;
   brandApply: boolean;
   outputType: string;
+  needsApiKey?: boolean;
 };
 
 export function Workspace({
@@ -39,8 +41,10 @@ export function Workspace({
   revokeShareAction,
   brandApply,
   outputType,
+  needsApiKey = false,
 }: Props) {
   const [fullscreen, setFullscreen] = useState(false);
+  const [mobileView, setMobileView] = useState<"chat" | "canvas">("canvas");
   const iframeRef = useRef<HTMLIFrameElement | null>(null);
 
   useEffect(() => {
@@ -88,14 +92,44 @@ export function Workspace({
         iframeRef={iframeRef}
         brandApply={brandApply}
       />
+      {needsApiKey && <ApiKeyGateBanner variant="workspace" />}
+      <div className="flex items-center gap-1 border-b border-black/5 bg-[#E8E0D0] px-3 py-1.5 md:hidden">
+        <button
+          type="button"
+          onClick={() => setMobileView("chat")}
+          className={`flex-1 rounded-md px-3 py-1.5 text-[12px] font-medium ${
+            mobileView === "chat"
+              ? "bg-white text-[#1F1B16] shadow-[0_1px_2px_rgba(0,0,0,0.04)]"
+              : "text-[#6B655D]"
+          }`}
+        >
+          Chat
+        </button>
+        <button
+          type="button"
+          onClick={() => setMobileView("canvas")}
+          className={`flex-1 rounded-md px-3 py-1.5 text-[12px] font-medium ${
+            mobileView === "canvas"
+              ? "bg-white text-[#1F1B16] shadow-[0_1px_2px_rgba(0,0,0,0.04)]"
+              : "text-[#6B655D]"
+          }`}
+        >
+          Canvas
+        </button>
+      </div>
       <main
-        className="cd-animate-cols grid flex-1 overflow-hidden"
+        className="cd-animate-cols flex flex-1 flex-col overflow-hidden md:grid"
         style={{
           gridTemplateColumns: fullscreen ? "0px 1fr" : "420px 1fr",
         }}
       >
-        <div className="flex min-h-0 min-w-0 overflow-hidden">
+        <div
+          className={`min-h-0 min-w-0 overflow-hidden md:flex ${
+            mobileView === "chat" ? "flex flex-1" : "hidden"
+          }`}
+        >
           <ChatPane
+            needsApiKey={needsApiKey}
             messages={chat.messages}
             status={chat.status}
             error={chat.error}
@@ -104,6 +138,11 @@ export function Workspace({
             clearError={chat.clearError}
           />
         </div>
+        <div
+          className={`min-h-0 min-w-0 flex-1 overflow-hidden md:flex ${
+            mobileView === "canvas" ? "flex" : "hidden"
+          }`}
+        >
         <CanvasPane
           projectId={projectId}
           outputType={outputType}
@@ -135,6 +174,19 @@ export function Workspace({
               metadata: { intent: "explore" },
             });
           }}
+          onContinueWithVariant={(i: number) => {
+            const picked = variants[i];
+            if (!picked) return;
+            const label = picked.title?.trim() || `Variant ${i + 1}`;
+            const isSlide = outputType === "slides";
+            const noun = isSlide ? "slide" : "variant";
+            chat.sendMessage({
+              text: isSlide
+                ? `Locking on ${noun} ${i + 1} ("${label}"). Iterate only on this slide from now on — don't regenerate the full deck. My next instructions will refine this single slide.`
+                : `Locking on ${noun} ${i + 1} ("${label}"). Discard the other alternatives. Every further change iterates on this one variant only; emit exactly one artifact per turn from now on.`,
+              metadata: { intent: "pick" },
+            });
+          }}
           onApplyComment={(c: CommentRow) => {
             const anchor = c.anchor
               ? `data-cd-id="${c.anchor}"`
@@ -146,6 +198,7 @@ export function Workspace({
             });
           }}
         />
+        </div>
       </main>
     </div>
   );

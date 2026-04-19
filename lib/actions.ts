@@ -461,6 +461,185 @@ export async function clearBrandAction(projectId: string) {
   revalidatePath(`/p/${projectId}/brand`);
 }
 
+// ── User settings ───────────────────────────────────────────────
+import {
+  encryptSecret,
+  decryptSecret,
+  hasAppSecret,
+} from "@/lib/security/crypto";
+
+export type CustomModel = { id: string; label: string };
+export type UserSettings = {
+  selectedModelId: string | null;
+  customModels: CustomModel[];
+  openRouterKeyPreview: string | null; // masked; never return full key
+  hasAppSecret: boolean;
+};
+
+export async function getUserSettings(): Promise<UserSettings> {
+  const user = await requireUser();
+  const [row] = await db
+    .select()
+    .from(schema.userSettings)
+    .where(eq(schema.userSettings.userId, user.id))
+    .limit(1);
+  const customs = (row?.customModels as CustomModel[] | null) ?? [];
+  let preview: string | null = null;
+  if (row?.encOpenrouterKey && hasAppSecret()) {
+    try {
+      const plain = decryptSecret(row.encOpenrouterKey);
+      preview = plain.slice(0, 6) + "…" + plain.slice(-4);
+    } catch {
+      preview = null;
+    }
+  }
+  return {
+    selectedModelId: row?.selectedModelId ?? null,
+    customModels: customs,
+    openRouterKeyPreview: preview,
+    hasAppSecret: hasAppSecret(),
+  };
+}
+
+export async function setSelectedModelAction(modelId: string | null) {
+  const user = await requireUser();
+  await db
+    .insert(schema.userSettings)
+    .values({
+      userId: user.id,
+      selectedModelId: modelId,
+      customModels: [],
+      updatedAt: new Date(),
+    })
+    .onConflictDoUpdate({
+      target: schema.userSettings.userId,
+      set: { selectedModelId: modelId, updatedAt: new Date() },
+    });
+  revalidatePath("/settings");
+}
+
+export async function addCustomModelAction(input: {
+  id: string;
+  label?: string;
+}) {
+  const user = await requireUser();
+  const id = input.id.trim();
+  if (!id || !/^[a-z0-9][a-z0-9-_/.:]+$/i.test(id)) {
+    throw new Error("invalid_model_id");
+  }
+  const label = (input.label?.trim() || id).slice(0, 60);
+  const [row] = await db
+    .select()
+    .from(schema.userSettings)
+    .where(eq(schema.userSettings.userId, user.id))
+    .limit(1);
+  const existing = (row?.customModels as CustomModel[] | null) ?? [];
+  if (existing.some((m) => m.id === id)) return;
+  const next = [...existing, { id, label }];
+  if (row) {
+    await db
+      .update(schema.userSettings)
+      .set({ customModels: next, updatedAt: new Date() })
+      .where(eq(schema.userSettings.userId, user.id));
+  } else {
+    await db.insert(schema.userSettings).values({
+      userId: user.id,
+      customModels: next,
+      updatedAt: new Date(),
+    });
+  }
+  revalidatePath("/settings");
+}
+
+export async function removeCustomModelAction(id: string) {
+  const user = await requireUser();
+  const [row] = await db
+    .select()
+    .from(schema.userSettings)
+    .where(eq(schema.userSettings.userId, user.id))
+    .limit(1);
+  if (!row) return;
+  const existing = (row.customModels as CustomModel[] | null) ?? [];
+  const next = existing.filter((m) => m.id !== id);
+  const unselect = row.selectedModelId === id;
+  await db
+    .update(schema.userSettings)
+    .set({
+      customModels: next,
+      selectedModelId: unselect ? null : row.selectedModelId,
+      updatedAt: new Date(),
+    })
+    .where(eq(schema.userSettings.userId, user.id));
+  revalidatePath("/settings");
+}
+
+export async function setOpenRouterKeyAction(key: string) {
+  const user = await requireUser();
+  if (!hasAppSecret()) throw new Error("no_app_secret");
+  const trimmed = key.trim();
+  const enc = trimmed ? encryptSecret(trimmed) : null;
+  await db
+    .insert(schema.userSettings)
+    .values({
+      userId: user.id,
+      encOpenrouterKey: enc,
+      customModels: [],
+      updatedAt: new Date(),
+    })
+    .onConflictDoUpdate({
+      target: schema.userSettings.userId,
+      set: { encOpenrouterKey: enc, updatedAt: new Date() },
+    });
+  revalidatePath("/settings");
+}
+
+export async function clearOpenRouterKeyAction() {
+  const user = await requireUser();
+  await db
+    .update(schema.userSettings)
+    .set({ encOpenrouterKey: null, updatedAt: new Date() })
+    .where(eq(schema.userSettings.userId, user.id));
+  revalidatePath("/settings");
+}
+
+export type ApiKeyStatus = {
+  hasServerKey: boolean;
+  hasUserKey: boolean;
+  hasAnyKey: boolean;
+};
+
+export async function getApiKeyStatus(): Promise<ApiKeyStatus> {
+  const user = await requireUser();
+  const cfg = await resolveUserAiConfig(user.id);
+  const hasServerKey = !!process.env.OPENROUTER_API_KEY;
+  const hasUserKey = !!cfg.apiKey;
+  return { hasServerKey, hasUserKey, hasAnyKey: hasServerKey || hasUserKey };
+}
+
+// Resolves effective {modelId, apiKey} for a user. Server-only; returns the
+// decrypted key. Callers must NOT leak this to the browser.
+export async function resolveUserAiConfig(
+  userId: string,
+): Promise<{ modelId: string | null; apiKey: string | null }> {
+  const [row] = await db
+    .select()
+    .from(schema.userSettings)
+    .where(eq(schema.userSettings.userId, userId))
+    .limit(1);
+  let apiKey: string | null = null;
+  if (row?.encOpenrouterKey && hasAppSecret()) {
+    try {
+      apiKey = decryptSecret(row.encOpenrouterKey);
+    } catch {
+      apiKey = null;
+    }
+  }
+  return {
+    modelId: row?.selectedModelId ?? null,
+    apiKey,
+  };
+}
+
 export async function getArtifactIdsForVersion(
   projectId: string,
   version: number,

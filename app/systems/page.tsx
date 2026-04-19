@@ -1,5 +1,14 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { listDesignSystems } from "@/lib/actions";
+
+export const metadata: Metadata = {
+  title: "Design systems",
+  description:
+    "Reusable brand tokens. Pin one to any project and every generation pulls from the same palette, type, and mood.",
+  robots: { index: false, follow: false },
+  alternates: { canonical: "/systems" },
+};
 import { SystemsList } from "@/components/systems/systems-list";
 import { Brand } from "@/components/brand";
 import { SignOutButton } from "@/components/sign-out-button";

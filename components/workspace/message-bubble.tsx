@@ -34,6 +34,21 @@ export function MessageBubble({ message, intakeState = "stale", onIntakeSubmit }
       </div>
     );
   }
+  if (isUser && intent === "pick") {
+    const textPart = (message.parts ?? []).find(
+      (p) => (p as { type?: string }).type === "text",
+    ) as { text?: string } | undefined;
+    const match = textPart?.text?.match(/"([^"]+)"/);
+    const label = match?.[1] ?? "this variant";
+    return (
+      <div className="cd-enter-fade flex justify-end">
+        <div className="flex items-center gap-2 rounded-full border border-[#D9623A]/40 bg-[#D9623A]/10 px-3 py-1.5 text-[12px] font-medium text-[#D9623A]">
+          <span aria-hidden>✓</span>
+          <span>Locked on {label}</span>
+        </div>
+      </div>
+    );
+  }
   return (
     <div className={`cd-enter-fade ${isUser ? "flex justify-end" : ""}`}>
       <div

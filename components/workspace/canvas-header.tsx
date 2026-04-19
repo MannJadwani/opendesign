@@ -40,25 +40,25 @@ export function CanvasHeader({
   canExplore,
 }: Props) {
   return (
-    <div className="flex items-center justify-between border-b border-black/5 bg-[#F5F0E8]/80 px-4 py-2">
-      <div className="flex items-center gap-2 text-[12px] text-[#6B655D]">
+    <div className="flex items-center justify-between gap-2 overflow-x-auto border-b border-black/5 bg-[#F5F0E8]/80 px-3 py-2 sm:px-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      <div className="flex min-w-0 shrink-0 items-center gap-2 text-[12px] text-[#6B655D]">
         {hasArtifact ? (
           <>
-            <span className="font-medium text-[#1F1B16]">{title ?? "Artifact"}</span>
-            <span>·</span>
-            <span>v{version}</span>
+            <span className="truncate font-medium text-[#1F1B16]">{title ?? "Artifact"}</span>
+            <span className="hidden sm:inline">·</span>
+            <span className="hidden sm:inline">v{version}</span>
           </>
         ) : (
           <span className="text-[#9A9389]">No artifact yet</span>
         )}
         {streaming && (
-          <span className="flex items-center gap-1 text-[#D9623A]">
+          <span className="flex shrink-0 items-center gap-1 text-[#D9623A]">
             <span className="inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-[#D9623A]" />
             live
           </span>
         )}
       </div>
-      <div className="flex items-center gap-1.5">
+      <div className="flex shrink-0 items-center gap-1.5">
         <button
           type="button"
           onClick={onExplore}
@@ -67,7 +67,7 @@ export function CanvasHeader({
           className="flex items-center gap-1.5 rounded-md border border-black/10 bg-white px-2 py-1 text-[11px] font-medium text-[#3D3831] hover:bg-[#FAF6EF] disabled:cursor-not-allowed disabled:opacity-50"
         >
           <span aria-hidden>✦</span>
-          <span>Explore</span>
+          <span className="hidden sm:inline">Explore</span>
         </button>
         <button
           type="button"
@@ -82,7 +82,7 @@ export function CanvasHeader({
           }`}
         >
           <IconEdit />
-          <span>{editMode ? "Editing" : "Edit"}</span>
+          <span className="hidden sm:inline">{editMode ? "Editing" : "Edit"}</span>
         </button>
         <button
           type="button"
@@ -97,7 +97,7 @@ export function CanvasHeader({
           }`}
         >
           <IconChat />
-          <span>{commentMode ? "Commenting" : "Comment"}</span>
+          <span className="hidden sm:inline">{commentMode ? "Commenting" : "Comment"}</span>
         </button>
         <div className="flex items-center rounded-md border border-black/10 bg-white p-0.5">
           <button
@@ -112,7 +112,7 @@ export function CanvasHeader({
             }`}
           >
             <IconMonitor />
-            <span>Web</span>
+            <span className="hidden sm:inline">Web</span>
           </button>
           <button
             type="button"
@@ -126,7 +126,7 @@ export function CanvasHeader({
             }`}
           >
             <IconPhone />
-            <span>Mobile</span>
+            <span className="hidden sm:inline">Mobile</span>
           </button>
         </div>
         <button
@@ -136,7 +136,7 @@ export function CanvasHeader({
           title={fullscreen ? "Exit full screen (Esc)" : "Full screen (⇧⌘F)"}
         >
           {fullscreen ? <IconShrink /> : <IconExpand />}
-          <span>{fullscreen ? "Exit" : "Full screen"}</span>
+          <span className="hidden sm:inline">{fullscreen ? "Exit" : "Full screen"}</span>
         </button>
       </div>
     </div>

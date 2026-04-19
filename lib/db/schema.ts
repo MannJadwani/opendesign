@@ -110,6 +110,16 @@ export const artifact = pgTable(
   (t) => [index("artifact_project_idx").on(t.projectId)],
 );
 
+export const userSettings = pgTable("user_settings", {
+  userId: text("user_id")
+    .primaryKey()
+    .references(() => user.id, { onDelete: "cascade" }),
+  selectedModelId: text("selected_model_id"), // nullable; falls back to DEFAULT_MODEL
+  customModels: jsonb("custom_models"), // [{ id, label }]
+  encOpenrouterKey: text("enc_openrouter_key"), // AES-256-GCM, base64url
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
 export const designSystem = pgTable("design_system", {
   id: text("id").primaryKey(),
   userId: text("user_id")

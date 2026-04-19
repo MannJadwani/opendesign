@@ -36,6 +36,7 @@ type Props = {
   onApplyComment: (comment: CommentRow) => void;
   onRegenerateFromControls: (summary: string) => void;
   onExplore: () => void;
+  onContinueWithVariant: (i: number) => void;
 };
 
 export function CanvasPane({
@@ -53,6 +54,7 @@ export function CanvasPane({
   onApplyComment,
   onRegenerateFromControls,
   onExplore,
+  onContinueWithVariant,
 }: Props) {
   const [device, setDevice] = useState<DeviceMode>("desktop");
   const [editMode, setEditMode] = useState(false);
@@ -363,6 +365,8 @@ export function CanvasPane({
             setCompareIndex(null);
           }}
           disableKeys={editMode || commentMode}
+          onContinueWith={onContinueWithVariant}
+          canContinue={!streaming}
         />
       ) : (
         variants.length > 1 && (
@@ -377,6 +381,8 @@ export function CanvasPane({
             onToggleCompare={(i) =>
               setCompareIndex((cur) => (cur === i || i === activeIndex ? null : i))
             }
+            onContinueWith={onContinueWithVariant}
+            canContinue={!streaming}
           />
         )
       )}

@@ -1,4 +1,10 @@
+import type { Metadata } from "next";
 import { Preview } from "./preview";
+
+export const metadata: Metadata = {
+  title: "Mockup · active",
+  robots: { index: false, follow: false },
+};
 
 export default function ActiveMockup() {
   return (

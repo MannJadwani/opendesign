@@ -1,21 +1,38 @@
+import type { Metadata } from "next";
 import {
   deleteProject,
+  getApiKeyStatus,
   getSessionUser,
   listDesignSystems,
   listProjectsWithPreview,
 } from "@/lib/actions";
+
+export const metadata: Metadata = {
+  title: "OpenDesign — Prompt, iterate, ship UI with AI",
+  description:
+    "Turn plain-language briefs into editable high-fidelity UI, slide decks, and wireframes. Bring any OpenRouter model, pin a design system, refine by chat or drag.",
+  alternates: { canonical: "/" },
+  openGraph: {
+    title: "OpenDesign — Prompt, iterate, ship UI with AI",
+    description:
+      "Open-source AI design canvas. Prompt, iterate, and export high-fidelity UI, slide decks, and wireframes.",
+    url: "/",
+  },
+};
 import { GuestLanding } from "@/components/home/guest-landing";
 import { HomeHeader } from "@/components/home/home-header";
 import { HomeComposer } from "@/components/home/home-composer";
 import { ProjectsPanel } from "@/components/home/projects-panel";
+import { ApiKeyGateBanner } from "@/components/api-key-gate-banner";
 
 export default async function Home() {
   const user = await getSessionUser();
   if (!user) return <GuestLanding />;
 
-  const [projects, systems] = await Promise.all([
+  const [projects, systems, keyStatus] = await Promise.all([
     listProjectsWithPreview(),
     listDesignSystems(),
+    getApiKeyStatus(),
   ]);
 
   const systemCards = systems.map((s) => ({
@@ -30,8 +47,9 @@ export default async function Home() {
   return (
     <div className="flex min-h-screen flex-col bg-[#E8E0D0] text-[#1a1a1a]">
       <HomeHeader userEmail={user.email} />
-      <main className="flex flex-1 overflow-hidden">
-        <HomeComposer systems={systemOpts} />
+      {!keyStatus.hasAnyKey && <ApiKeyGateBanner variant="home" />}
+      <main className="flex flex-1 flex-col overflow-hidden lg:flex-row">
+        <HomeComposer systems={systemOpts} needsApiKey={!keyStatus.hasAnyKey} />
         <ProjectsPanel
           projects={projects.map((p) => ({
             id: p.id,

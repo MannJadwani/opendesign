@@ -9,9 +9,18 @@ type Props = {
   activeIndex: number;
   onSelect: (i: number) => void;
   disableKeys?: boolean;
+  onContinueWith?: (i: number) => void;
+  canContinue?: boolean;
 };
 
-export function DeckStrip({ slides, activeIndex, onSelect, disableKeys }: Props) {
+export function DeckStrip({
+  slides,
+  activeIndex,
+  onSelect,
+  disableKeys,
+  onContinueWith,
+  canContinue = false,
+}: Props) {
   useEffect(() => {
     if (disableKeys) return;
     function onKey(e: KeyboardEvent) {
@@ -54,6 +63,17 @@ export function DeckStrip({ slides, activeIndex, onSelect, disableKeys }: Props)
         →
       </button>
       <div className="mx-1 h-5 w-px bg-black/10" />
+      {onContinueWith && (
+        <button
+          type="button"
+          onClick={() => onContinueWith(activeIndex)}
+          disabled={!canContinue}
+          title="Iterate only on this slide"
+          className="shrink-0 rounded-md border border-[#D9623A] bg-[#D9623A] px-2 py-1 text-[11px] font-medium text-white hover:bg-[#C0462A] disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          Edit this slide →
+        </button>
+      )}
       {slides.map((s, i) => {
         const active = i === activeIndex;
         const label = s.title?.trim() || `Slide ${i + 1}`;

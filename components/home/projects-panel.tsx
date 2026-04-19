@@ -43,9 +43,9 @@ export function ProjectsPanel({ projects, systems, onDelete }: Props) {
   }, [systems, q]);
 
   return (
-    <section className="flex flex-1 flex-col px-8 py-5">
-      <div className="flex items-center justify-between gap-4">
-        <div className="flex items-center gap-1">
+    <section className="flex flex-1 flex-col px-4 py-5 sm:px-6 lg:px-8">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+        <div className="-mx-1 flex items-center gap-1 overflow-x-auto px-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           <PanelTab active={tab === "recent"} onClick={() => setTab("recent")}>Recent</PanelTab>
           <PanelTab active={tab === "yours"} onClick={() => setTab("yours")}>Your designs</PanelTab>
           <PanelTab active={tab === "examples"} onClick={() => setTab("examples")}>Examples</PanelTab>
@@ -55,7 +55,7 @@ export function ProjectsPanel({ projects, systems, onDelete }: Props) {
           value={q}
           onChange={(e) => setQ(e.target.value)}
           placeholder="Search…"
-          className="w-[220px] rounded-full border border-black/10 bg-white px-3.5 py-1.5 text-[13px] focus:border-[#D9623A] focus:outline-none"
+          className="w-full rounded-full border border-black/10 bg-white px-3.5 py-1.5 text-[13px] focus:border-[#D9623A] focus:outline-none sm:w-[220px]"
         />
       </div>
 
@@ -85,7 +85,7 @@ function PanelTab({
     <button
       type="button"
       onClick={onClick}
-      className={`rounded-full px-3 py-1.5 text-[13px] transition-colors ${
+      className={`shrink-0 whitespace-nowrap rounded-full px-3 py-1.5 text-[13px] transition-colors ${
         active
           ? "bg-white font-medium text-[#1a1a1a] shadow-[0_1px_2px_rgba(0,0,0,0.04)]"
           : "text-black/55 hover:text-[#1a1a1a]"

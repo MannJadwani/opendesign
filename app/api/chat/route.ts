@@ -11,7 +11,7 @@ import {
   type BrandTokens,
 } from "@/lib/ai/scrapers/brand-ingest";
 import { db, schema } from "@/lib/db";
-import { requireUser } from "@/lib/actions";
+import { requireUser, resolveUserAiConfig } from "@/lib/actions";
 import { rid } from "@/lib/util/id";
 
 export const runtime = "nodejs";
@@ -72,9 +72,24 @@ export async function POST(req: Request) {
 
   const wireframe = project.fidelity === "wireframe";
   const slides = project.outputType === "slides";
-  const needsCustomAgent = !!injected || wireframe || slides;
+  const userCfg = await resolveUserAiConfig(user.id);
+  const hasKey = !!userCfg.apiKey || !!process.env.OPENROUTER_API_KEY;
+  if (!hasKey) {
+    return NextResponse.json(
+      {
+        error: "no_api_key",
+        message:
+          "No OpenRouter API key configured. Add one in Settings to enable generation.",
+      },
+      { status: 428 },
+    );
+  }
+  const needsCustomAgent =
+    !!injected || wireframe || slides || !!userCfg.modelId || !!userCfg.apiKey;
   const agent = needsCustomAgent
     ? buildDesignAgent({
+        modelId: userCfg.modelId ?? undefined,
+        apiKey: userCfg.apiKey ?? undefined,
         instructions:
           SYSTEM_PROMPT +
           (injected ? "\n" + brandTokensToPromptSection(injected) : "") +

@@ -1,6 +1,20 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getDesignSystem } from "@/lib/actions";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}): Promise<Metadata> {
+  const { id } = await params;
+  const system = await getDesignSystem(id);
+  return {
+    title: system ? `${system.name} · Design system` : "Design system",
+    robots: { index: false, follow: false },
+  };
+}
 import { SystemEditor } from "@/components/systems/system-editor";
 import { Brand } from "@/components/brand";
 

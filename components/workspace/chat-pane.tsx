@@ -14,6 +14,7 @@ type Props = {
   sendMessage: UseChatHelpers<UIMessage>["sendMessage"];
   stop: UseChatHelpers<UIMessage>["stop"];
   clearError: UseChatHelpers<UIMessage>["clearError"];
+  needsApiKey?: boolean;
 };
 
 export function ChatPane({
@@ -23,6 +24,7 @@ export function ChatPane({
   sendMessage,
   stop,
   clearError,
+  needsApiKey = false,
 }: Props) {
   const showThinking = status === "submitted" || status === "streaming";
 
@@ -38,7 +40,12 @@ export function ChatPane({
         />
       )}
       {error && <ErrorBanner error={error} onDismiss={clearError} />}
-      <Composer status={status} sendMessage={sendMessage} stop={stop} />
+      <Composer
+        status={status}
+        sendMessage={sendMessage}
+        stop={stop}
+        needsApiKey={needsApiKey}
+      />
     </aside>
   );
 }

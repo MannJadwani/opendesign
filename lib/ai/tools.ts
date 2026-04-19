@@ -81,33 +81,37 @@ export const fetchImage = tool({
   },
 });
 
-export const interpretImage = tool({
-  description:
-    "Vision interpretation of an image URL. Returns summary, palette (hex), typography, layout posture, mood, and which parts of a new design could borrow from it.",
-  inputSchema: z.object({
-    url: z.string().url(),
-    focus: z
-      .enum(["layout", "typography", "color", "overall"])
-      .default("overall"),
-  }),
-  execute: async ({ url, focus }) => {
-    const key = cacheKey("interpret_image", { url, focus });
-    const hit = await getCached<ImageInterpretation & { url: string; focus: string }>(key);
-    if (hit) return hit;
-    try {
-      const notes = await interpretImageUrl(url, focus);
-      const result = { url, focus, ...notes };
-      await setCached(key, result);
-      return result;
-    } catch (e) {
-      return {
-        url,
-        focus,
-        error: e instanceof Error ? e.message : String(e),
-      };
-    }
-  },
-});
+export function buildInterpretImage(opts: { apiKey?: string } = {}) {
+  return tool({
+    description:
+      "Vision interpretation of an image URL. Returns summary, palette (hex), typography, layout posture, mood, and which parts of a new design could borrow from it.",
+    inputSchema: z.object({
+      url: z.string().url(),
+      focus: z
+        .enum(["layout", "typography", "color", "overall"])
+        .default("overall"),
+    }),
+    execute: async ({ url, focus }) => {
+      const key = cacheKey("interpret_image", { url, focus });
+      const hit = await getCached<ImageInterpretation & { url: string; focus: string }>(key);
+      if (hit) return hit;
+      try {
+        const notes = await interpretImageUrl(url, focus, { apiKey: opts.apiKey });
+        const result = { url, focus, ...notes };
+        await setCached(key, result);
+        return result;
+      } catch (e) {
+        return {
+          url,
+          focus,
+          error: e instanceof Error ? e.message : String(e),
+        };
+      }
+    },
+  });
+}
+
+export const interpretImage = buildInterpretImage();
 
 export const synthesizeConcept = tool({
   description:
@@ -213,15 +217,19 @@ export const emitArtifact = tool({
   }),
 });
 
-export const designTools = {
-  ask_intake_questions: askIntakeQuestions,
-  search_pinterest: searchPinterest,
-  search_components: searchComponents,
-  fetch_image: fetchImage,
-  interpret_image: interpretImage,
-  synthesize_concept: synthesizeConcept,
-  apply_design_system: applyDesignSystem,
-  emit_artifact: emitArtifact,
-} as const;
+export function buildDesignTools(opts: { apiKey?: string } = {}) {
+  return {
+    ask_intake_questions: askIntakeQuestions,
+    search_pinterest: searchPinterest,
+    search_components: searchComponents,
+    fetch_image: fetchImage,
+    interpret_image: buildInterpretImage({ apiKey: opts.apiKey }),
+    synthesize_concept: synthesizeConcept,
+    apply_design_system: applyDesignSystem,
+    emit_artifact: emitArtifact,
+  } as const;
+}
 
-export type DesignTools = typeof designTools;
+export const designTools = buildDesignTools();
+
+export type DesignTools = ReturnType<typeof buildDesignTools>;

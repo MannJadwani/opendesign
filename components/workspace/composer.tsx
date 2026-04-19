@@ -9,12 +9,13 @@ type Props = {
   status: UseChatHelpers<UIMessage>["status"];
   sendMessage: UseChatHelpers<UIMessage>["sendMessage"];
   stop: UseChatHelpers<UIMessage>["stop"];
+  needsApiKey?: boolean;
 };
 
 const MAX_FILE_BYTES = 4_000_000;
 const MAX_FILES = 4;
 
-export function Composer({ status, sendMessage, stop }: Props) {
+export function Composer({ status, sendMessage, stop, needsApiKey = false }: Props) {
   const [text, setText] = useState("");
   const [files, setFiles] = useState<File[]>([]);
   const [dragOver, setDragOver] = useState(false);
@@ -43,7 +44,7 @@ export function Composer({ status, sendMessage, stop }: Props) {
   function onSubmit(e: FormEvent) {
     e.preventDefault();
     const t = text.trim();
-    if ((!t && files.length === 0) || busy) return;
+    if ((!t && files.length === 0) || busy || needsApiKey) return;
 
     const list = new DataTransfer();
     for (const f of files) list.items.add(f);
@@ -161,10 +162,11 @@ export function Composer({ status, sendMessage, stop }: Props) {
         ) : (
           <button
             type="submit"
-            disabled={!text.trim() && files.length === 0}
+            disabled={(!text.trim() && files.length === 0) || needsApiKey}
+            title={needsApiKey ? "Add an OpenRouter key in Settings to enable" : undefined}
             className="cd-hover-lift rounded-lg bg-[#D9623A] px-3.5 py-1.5 text-[13px] font-medium text-white hover:bg-[#C0462A] disabled:opacity-50"
           >
-            Send
+            {needsApiKey ? "Key required" : "Send"}
           </button>
         )}
       </div>

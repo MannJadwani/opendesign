@@ -1,3 +1,10 @@
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Mockup",
+  robots: { index: false, follow: false },
+};
+
 export default function MockupPage() {
   return (
     <div className="flex h-screen flex-col bg-[#E8E0D0] text-[#1F1B16]" style={{ fontFamily: "var(--font-geist-sans)" }}>

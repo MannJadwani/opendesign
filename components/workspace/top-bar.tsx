@@ -33,20 +33,22 @@ export function TopBar({
   brandApply,
 }: Props) {
   return (
-    <header className="flex items-center justify-between bg-[#E8E0D0] px-3 py-2">
-      <div className="flex items-center gap-2">
-        <Brand variant="serif" />
-        <span className="mx-1 h-5 w-px bg-black/10" />
+    <header className="flex items-center justify-between gap-2 bg-[#E8E0D0] px-2 py-2 sm:px-3">
+      <div className="flex min-w-0 items-center gap-2">
+        <div className="hidden sm:block">
+          <Brand variant="serif" />
+        </div>
+        <span className="mx-1 hidden h-5 w-px bg-black/10 sm:block" />
         <Link
           href="/"
-          className="flex h-8 w-8 items-center justify-center rounded-lg text-[#6B655D] hover:bg-black/5 hover:text-[#1F1B16]"
+          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-[#6B655D] hover:bg-black/5 hover:text-[#1F1B16]"
           title="Home"
         >
           <IconHome />
         </Link>
-        <span className="ml-2 truncate text-[13px] text-[#6B655D]">{projectTitle}</span>
+        <span className="ml-1 min-w-0 truncate text-[13px] text-[#6B655D] sm:ml-2">{projectTitle}</span>
       </div>
-      <div className="flex items-center gap-1.5">
+      <div className="flex shrink-0 items-center gap-1.5">
         <Link
           href={`/p/${projectId}/brand`}
           title={brandApply ? "Brand applied — tap to edit" : "Pin a brand to this project"}

@@ -11,9 +11,10 @@ type SystemOpt = { id: string; name: string };
 
 type Props = {
   systems: SystemOpt[];
+  needsApiKey?: boolean;
 };
 
-export function HomeComposer({ systems }: Props) {
+export function HomeComposer({ systems, needsApiKey = false }: Props) {
   const [tab, setTab] = useState<Tab>("prototype");
   const [name, setName] = useState("");
   const [fidelity, setFidelity] = useState<Fidelity>("high");
@@ -21,8 +22,10 @@ export function HomeComposer({ systems }: Props) {
   const [pending, startTransition] = useTransition();
 
   const outputType = tab === "deck" ? "slides" : "website";
+  const disabled = pending || needsApiKey;
 
   function submit() {
+    if (needsApiKey) return;
     startTransition(async () => {
       await createProject({
         name,
@@ -34,7 +37,7 @@ export function HomeComposer({ systems }: Props) {
   }
 
   return (
-    <aside className="flex w-[340px] shrink-0 flex-col gap-5 border-r border-black/5 bg-[#F5F0E8] px-6 py-5">
+    <aside className="flex w-full shrink-0 flex-col gap-5 border-b border-black/5 bg-[#F5F0E8] px-4 py-5 sm:px-6 lg:w-[340px] lg:border-b-0 lg:border-r">
       <div className="flex items-center gap-4 text-[13px]">
         <TabButton active={tab === "prototype"} onClick={() => setTab("prototype")}>
           Prototype
@@ -105,11 +108,12 @@ export function HomeComposer({ systems }: Props) {
         <button
           type="button"
           onClick={submit}
-          disabled={pending}
+          disabled={disabled}
+          title={needsApiKey ? "Add an OpenRouter key in Settings to enable" : undefined}
           className="cd-hover-lift mt-4 flex w-full items-center justify-center gap-1.5 rounded-lg bg-[#D9623A] px-3 py-2 text-[13px] font-medium text-white hover:bg-[#C0462A] disabled:opacity-50"
         >
           <span>+</span>
-          <span>{pending ? "Creating…" : "Create"}</span>
+          <span>{pending ? "Creating…" : needsApiKey ? "Add API key first" : "Create"}</span>
         </button>
       </div>
 

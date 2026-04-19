@@ -1,6 +1,12 @@
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { getProject, listDesignSystems } from "@/lib/actions";
+
+export const metadata: Metadata = {
+  title: "Brand system",
+  robots: { index: false, follow: false },
+};
 import { BrandEditor } from "@/components/workspace/brand-editor";
 import type { BrandTokens } from "@/lib/ai/scrapers/brand-ingest";
 
