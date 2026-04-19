@@ -16,6 +16,9 @@ type Props = {
   userEmail?: string | null;
   initialMessages: UIMessage[];
   initialArtifact: InitialArtifact;
+  initialShareSlug: string | null;
+  createShareAction: (projectId: string) => Promise<{ slug: string }>;
+  revokeShareAction: (projectId: string) => Promise<void>;
 };
 
 export function Workspace({
@@ -24,6 +27,9 @@ export function Workspace({
   userEmail,
   initialMessages,
   initialArtifact,
+  initialShareSlug,
+  createShareAction,
+  revokeShareAction,
 }: Props) {
   const [artifact, setArtifact] = useState<InitialArtifact>(initialArtifact);
   const [fullscreen, setFullscreen] = useState(false);
@@ -74,7 +80,14 @@ export function Workspace({
 
   return (
     <div className="flex h-screen flex-col bg-[#E8E0D0] text-[#1F1B16]">
-      <TopBar projectTitle={projectTitle} userEmail={userEmail} />
+      <TopBar
+        projectId={projectId}
+        projectTitle={projectTitle}
+        userEmail={userEmail}
+        initialShareSlug={initialShareSlug}
+        createShareAction={createShareAction}
+        revokeShareAction={revokeShareAction}
+      />
       <main
         className={`grid flex-1 overflow-hidden ${
           fullscreen ? "grid-cols-1" : "grid-cols-[420px_1fr]"

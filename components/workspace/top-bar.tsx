@@ -1,11 +1,28 @@
+"use client";
+
 import Link from "next/link";
 import { SignOutButton } from "@/components/sign-out-button";
 import { Brand } from "@/components/brand";
 import { IconHome } from "@/components/icons";
+import { SharePopover } from "./share-popover";
 
-type Props = { projectTitle: string; userEmail?: string | null };
+type Props = {
+  projectId: string;
+  projectTitle: string;
+  userEmail?: string | null;
+  initialShareSlug: string | null;
+  createShareAction: (projectId: string) => Promise<{ slug: string }>;
+  revokeShareAction: (projectId: string) => Promise<void>;
+};
 
-export function TopBar({ projectTitle, userEmail }: Props) {
+export function TopBar({
+  projectId,
+  projectTitle,
+  userEmail,
+  initialShareSlug,
+  createShareAction,
+  revokeShareAction,
+}: Props) {
   return (
     <header className="flex items-center justify-between bg-[#E8E0D0] px-3 py-2">
       <div className="flex items-center gap-2">
@@ -21,9 +38,12 @@ export function TopBar({ projectTitle, userEmail }: Props) {
         <span className="ml-2 truncate text-[13px] text-[#6B655D]">{projectTitle}</span>
       </div>
       <div className="flex items-center gap-1.5">
-        <button className="rounded-lg border border-black/10 bg-white px-3.5 py-1.5 text-[13px] font-medium hover:bg-[#FAF6EF]">
-          Share
-        </button>
+        <SharePopover
+          projectId={projectId}
+          initialSlug={initialShareSlug}
+          createAction={createShareAction}
+          revokeAction={revokeShareAction}
+        />
         <button className="rounded-lg bg-[#1F1B16] px-3.5 py-1.5 text-[13px] font-medium text-white hover:bg-black">
           Export
         </button>

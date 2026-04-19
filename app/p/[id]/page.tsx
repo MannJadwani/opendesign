@@ -2,6 +2,11 @@ import { notFound } from "next/navigation";
 import { asc, desc, eq } from "drizzle-orm";
 import { Workspace } from "@/components/workspace/workspace";
 import { getProject, getSessionUser } from "@/lib/actions";
+import {
+  getExistingShareSlug,
+  getOrCreateShareLink,
+  revokeShareLink,
+} from "@/lib/share";
 import { db, schema } from "@/lib/db";
 import type { UIMessage } from "ai";
 
@@ -14,7 +19,7 @@ export default async function ProjectPage({
   const [project, user] = await Promise.all([getProject(id), getSessionUser()]);
   if (!project) notFound();
 
-  const [rawMessages, artifacts] = await Promise.all([
+  const [rawMessages, artifacts, shareSlug] = await Promise.all([
     db
       .select()
       .from(schema.message)
@@ -26,6 +31,7 @@ export default async function ProjectPage({
       .where(eq(schema.artifact.projectId, id))
       .orderBy(desc(schema.artifact.version))
       .limit(1),
+    getExistingShareSlug(id),
   ]);
 
   const initialMessages: UIMessage[] = rawMessages.map(
@@ -47,6 +53,15 @@ export default async function ProjectPage({
       userEmail={user?.email}
       initialMessages={initialMessages}
       initialArtifact={initialArtifact}
+      initialShareSlug={shareSlug}
+      createShareAction={async (pid: string) => {
+        "use server";
+        return getOrCreateShareLink(pid);
+      }}
+      revokeShareAction={async (pid: string) => {
+        "use server";
+        await revokeShareLink(pid);
+      }}
     />
   );
 }
