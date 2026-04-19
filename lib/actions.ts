@@ -84,7 +84,14 @@ export async function listProjectsWithPreview() {
 }
 
 export async function createProject(
-  input: string | { name?: string; outputType?: string; designSystemId?: string | null } = {},
+  input:
+    | string
+    | {
+        name?: string;
+        outputType?: string;
+        designSystemId?: string | null;
+        fidelity?: "wireframe" | "high";
+      } = {},
 ) {
   const user = await requireUser();
   const opts = typeof input === "string" ? { outputType: input } : input;
@@ -94,6 +101,7 @@ export async function createProject(
     userId: user.id,
     title: opts.name?.trim() || "Untitled",
     outputType: opts.outputType ?? "website",
+    fidelity: opts.fidelity ?? "high",
     designSystemId: opts.designSystemId ?? null,
   });
   redirect(`/p/${id}`);

@@ -27,6 +27,7 @@ export function HomeComposer({ systems }: Props) {
       await createProject({
         name,
         outputType,
+        fidelity,
         designSystemId: systemId || null,
       });
     });

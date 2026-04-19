@@ -1,0 +1,1 @@
+ALTER TABLE "project" ADD COLUMN "fidelity" text DEFAULT 'high' NOT NULL;

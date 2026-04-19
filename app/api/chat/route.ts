@@ -5,7 +5,7 @@ import {
 } from "ai";
 import { and, desc, eq } from "drizzle-orm";
 import { designAgent, buildDesignAgent } from "@/lib/ai/agent";
-import { SYSTEM_PROMPT } from "@/lib/ai/system";
+import { SYSTEM_PROMPT, WIREFRAME_PROMPT } from "@/lib/ai/system";
 import {
   brandTokensToPromptSection,
   type BrandTokens,
@@ -70,10 +70,14 @@ export async function POST(req: Request) {
       ? (project.brandTokens as BrandTokens)
       : systemTokens;
 
-  const agent = injected
+  const wireframe = project.fidelity === "wireframe";
+  const needsCustomAgent = !!injected || wireframe;
+  const agent = needsCustomAgent
     ? buildDesignAgent({
         instructions:
-          SYSTEM_PROMPT + "\n" + brandTokensToPromptSection(injected),
+          SYSTEM_PROMPT +
+          (injected ? "\n" + brandTokensToPromptSection(injected) : "") +
+          (wireframe ? WIREFRAME_PROMPT : ""),
       })
     : designAgent;
 

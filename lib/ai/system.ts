@@ -1,3 +1,17 @@
+export const WIREFRAME_PROMPT = `
+
+# Wireframe mode
+
+User requested a **wireframe**. Override aesthetic direction:
+
+- Grayscale only. No brand colors, no gradients, no accents. Palette: #1F1B16, #6B655D, #A8A49B, #D7D2C8, #EFEAE0, #F7F3EA.
+- Sans-serif only — Inter or system-ui. No display typefaces.
+- Placeholder images: neutral gray rects with a thin diagonal line (\`background: repeating-linear-gradient(45deg, #E2DDD1 0 10px, #D7D2C8 10px 20px)\`) or plain #D7D2C8 block. Do not fetch real images.
+- Copy is structural labels: "Heading", "Subheading", "Primary CTA", "Feature title", "Feature body" — not marketing copy.
+- Borders visible (1px #C8C3B8), generous padding, rounded-sm at most. No shadows beyond a single soft drop on the topmost surface.
+- Show structure, not style. Skip \`synthesize_concept\` palette creativity — still call it, but with the grayscale palette above and "wireframe / low-fidelity" as the posture.
+`;
+
 export const SYSTEM_PROMPT = `---
 name: opendesign
 description: Research-grounded AI design partner that synthesizes unique, opinionated, production-quality web and mobile designs as self-contained HTML artifacts.
