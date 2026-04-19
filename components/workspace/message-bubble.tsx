@@ -1,7 +1,6 @@
 import type { UIMessage } from "ai";
 import { ToolPart } from "./tool-part";
 import { Markdown } from "./markdown";
-import { IntakeForm } from "./intake-form";
 
 type IntakeState = "active" | "submitted" | "stale";
 
@@ -118,17 +117,22 @@ function Part({
       </p>
     );
   }
-  if (type === "tool-ask_intake_questions" && intakeState !== "stale" && onIntakeSubmit) {
-    const input = (part.input ?? part.args) as Record<string, unknown> | undefined;
-    if (input) {
+  if (type === "tool-ask_intake_questions") {
+    if (intakeState === "active") {
       return (
-        <IntakeForm
-          input={input}
-          submitted={intakeState === "submitted"}
-          onSubmit={onIntakeSubmit}
-        />
+        <p className="rounded-lg border border-[#D9623A]/30 bg-[#FDEFE8]/60 px-3 py-2 text-[12px] text-[#C0462A]">
+          Answer the questions on the canvas to continue →
+        </p>
       );
     }
+    if (intakeState === "submitted") {
+      return (
+        <p className="rounded-lg border border-black/10 bg-white/60 px-3 py-2 text-[12px] text-[#6B655D]">
+          Intake answered ✓
+        </p>
+      );
+    }
+    return null;
   }
   if (type?.startsWith("tool-")) {
     return <ToolPart part={part} />;

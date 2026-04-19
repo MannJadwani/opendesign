@@ -20,6 +20,10 @@ import {
 import { useMoveableOverlay } from "@/lib/workspace/use-moveable";
 import { CommentOverlay } from "./comment-overlay";
 import { ControlsPanel } from "./controls-panel";
+import { IntakeForm } from "./intake-form";
+import type { ComponentProps } from "react";
+
+type IntakeFormInput = ComponentProps<typeof IntakeForm>["input"];
 
 type Props = {
   projectId: string;
@@ -37,6 +41,9 @@ type Props = {
   onRegenerateFromControls: (summary: string) => void;
   onExplore: () => void;
   onContinueWithVariant: (i: number) => void;
+  intakeInput?: Record<string, unknown> | null;
+  intakeSubmitted?: boolean;
+  onIntakeSubmit?: (text: string) => void;
 };
 
 export function CanvasPane({
@@ -55,6 +62,9 @@ export function CanvasPane({
   onRegenerateFromControls,
   onExplore,
   onContinueWithVariant,
+  intakeInput = null,
+  intakeSubmitted = false,
+  onIntakeSubmit,
 }: Props) {
   const [device, setDevice] = useState<DeviceMode>("desktop");
   const [editMode, setEditMode] = useState(false);
@@ -494,6 +504,16 @@ export function CanvasPane({
                 />
               </div>
             )
+          ) : intakeInput && onIntakeSubmit ? (
+            <div className="flex flex-1 items-center justify-center overflow-auto p-6">
+              <div className="w-full max-w-xl">
+                <IntakeForm
+                  input={intakeInput as IntakeFormInput}
+                  submitted={intakeSubmitted}
+                  onSubmit={onIntakeSubmit}
+                />
+              </div>
+            </div>
           ) : (
             <CanvasPlaceholder streaming={streaming} />
           )}

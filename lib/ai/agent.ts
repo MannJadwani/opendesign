@@ -1,4 +1,4 @@
-import { ToolLoopAgent, stepCountIs } from "ai";
+import { ToolLoopAgent, hasToolCall, stepCountIs } from "ai";
 import { createOpenRouter } from "@openrouter/ai-sdk-provider";
 import { SYSTEM_PROMPT } from "./system";
 import { buildDesignTools } from "./tools";
@@ -22,7 +22,7 @@ export function buildDesignAgent({
     model: openrouter.chat(modelId),
     instructions,
     tools: buildDesignTools({ apiKey }),
-    stopWhen: stepCountIs(14),
+    stopWhen: [stepCountIs(14), hasToolCall("ask_intake_questions")],
   });
 }
 

@@ -83,6 +83,29 @@ export function Workspace({
       status: chat.status,
     });
 
+  const intake = useMemo(() => {
+    const msgs = chat.messages;
+    for (let i = msgs.length - 1; i >= 0; i--) {
+      const m = msgs[i];
+      if (m.role !== "assistant") continue;
+      const part = (m.parts ?? []).find(
+        (p) => (p as { type?: string }).type === "tool-ask_intake_questions",
+      ) as { input?: Record<string, unknown>; args?: Record<string, unknown> } | undefined;
+      if (!part) continue;
+      const input = part.input ?? part.args;
+      if (!input) continue;
+      let submitted = false;
+      for (let j = i + 1; j < msgs.length; j++) {
+        if (msgs[j].role === "user") {
+          submitted = true;
+          break;
+        }
+      }
+      return { input, submitted };
+    }
+    return null;
+  }, [chat.messages]);
+
   return (
     <div className="flex h-screen flex-col bg-[#E8E0D0] text-[#1F1B16]">
       <TopBar
@@ -193,6 +216,11 @@ export function Workspace({
               metadata: { intent: "pick" },
             });
           }}
+          intakeInput={intake && !intake.submitted ? intake.input : null}
+          intakeSubmitted={intake?.submitted ?? false}
+          onIntakeSubmit={(text) =>
+            chat.sendMessage({ text, metadata: { intent: "intake" } })
+          }
           onApplyComment={(c: CommentRow) => {
             const anchor = c.anchor
               ? `data-cd-id="${c.anchor}"`
