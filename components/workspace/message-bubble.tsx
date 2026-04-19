@@ -25,6 +25,26 @@ function Part({ part }: { part: Record<string, unknown> }) {
   if (type === "text") {
     return <p className="whitespace-pre-wrap">{(part.text as string) ?? ""}</p>;
   }
+  if (type === "file") {
+    const mediaType = (part.mediaType as string | undefined) ?? "";
+    const url = (part.url as string | undefined) ?? "";
+    const filename = part.filename as string | undefined;
+    if (mediaType.startsWith("image/") && url) {
+      return (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={url}
+          alt={filename ?? "attachment"}
+          className="max-h-56 rounded-lg border border-black/10 object-cover"
+        />
+      );
+    }
+    return (
+      <p className="rounded-lg border border-black/10 bg-white/50 px-2 py-1 text-[12px] text-[#3D3831]">
+        📎 {filename ?? mediaType}
+      </p>
+    );
+  }
   if (type === "reasoning") {
     const text = (part.text as string) ?? "";
     if (!text) return null;
