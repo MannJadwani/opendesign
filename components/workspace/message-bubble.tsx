@@ -1,8 +1,17 @@
 import type { UIMessage } from "ai";
 import { ToolPart } from "./tool-part";
 import { Markdown } from "./markdown";
+import { IntakeForm } from "./intake-form";
 
-export function MessageBubble({ message }: { message: UIMessage }) {
+type IntakeState = "active" | "submitted" | "stale";
+
+type Props = {
+  message: UIMessage;
+  intakeState?: IntakeState;
+  onIntakeSubmit?: (text: string) => void;
+};
+
+export function MessageBubble({ message, intakeState = "stale", onIntakeSubmit }: Props) {
   const isUser = message.role === "user";
   const intent = (message.metadata as { intent?: string } | undefined)?.intent;
   if (isUser && intent === "explore") {
@@ -11,6 +20,16 @@ export function MessageBubble({ message }: { message: UIMessage }) {
         <div className="flex items-center gap-2 rounded-full border border-[#D9623A]/40 bg-[#D9623A]/10 px-3 py-1.5 text-[12px] font-medium text-[#D9623A]">
           <span aria-hidden>✦</span>
           <span>Exploring 3 alternative directions</span>
+        </div>
+      </div>
+    );
+  }
+  if (isUser && intent === "intake") {
+    return (
+      <div className="cd-enter-fade flex justify-end">
+        <div className="flex items-center gap-2 rounded-full border border-[#D9623A]/40 bg-[#D9623A]/10 px-3 py-1.5 text-[12px] font-medium text-[#D9623A]">
+          <span aria-hidden>✦</span>
+          <span>Intake answers sent</span>
         </div>
       </div>
     );
@@ -25,14 +44,30 @@ export function MessageBubble({ message }: { message: UIMessage }) {
         }
       >
         {(message.parts ?? []).map((part, i) => (
-          <Part key={i} part={part as Record<string, unknown>} isUser={isUser} />
+          <Part
+            key={i}
+            part={part as Record<string, unknown>}
+            isUser={isUser}
+            intakeState={intakeState}
+            onIntakeSubmit={onIntakeSubmit}
+          />
         ))}
       </div>
     </div>
   );
 }
 
-function Part({ part, isUser }: { part: Record<string, unknown>; isUser: boolean }) {
+function Part({
+  part,
+  isUser,
+  intakeState,
+  onIntakeSubmit,
+}: {
+  part: Record<string, unknown>;
+  isUser: boolean;
+  intakeState: IntakeState;
+  onIntakeSubmit?: (text: string) => void;
+}) {
   const type = part.type as string;
   if (type === "text") {
     const text = (part.text as string) ?? "";
@@ -67,6 +102,18 @@ function Part({ part, isUser }: { part: Record<string, unknown>; isUser: boolean
         {text}
       </p>
     );
+  }
+  if (type === "tool-ask_intake_questions" && intakeState !== "stale" && onIntakeSubmit) {
+    const input = (part.input ?? part.args) as Record<string, unknown> | undefined;
+    if (input) {
+      return (
+        <IntakeForm
+          input={input}
+          submitted={intakeState === "submitted"}
+          onSubmit={onIntakeSubmit}
+        />
+      );
+    }
   }
   if (type?.startsWith("tool-")) {
     return <ToolPart part={part} />;

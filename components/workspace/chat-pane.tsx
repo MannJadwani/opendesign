@@ -31,7 +31,11 @@ export function ChatPane({
       {messages.length === 0 && !showThinking ? (
         <EmptyChat />
       ) : (
-        <MessageList messages={messages} showThinking={showThinking} />
+        <MessageList
+          messages={messages}
+          showThinking={showThinking}
+          onIntakeSubmit={(text) => sendMessage({ text, metadata: { intent: "intake" } })}
+        />
       )}
       {error && <ErrorBanner error={error} onDismiss={clearError} />}
       <Composer status={status} sendMessage={sendMessage} stop={stop} />

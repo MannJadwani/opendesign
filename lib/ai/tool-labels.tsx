@@ -13,6 +13,7 @@ import {
 export type ToolMeta = { label: string; running: string; icon: ReactNode };
 
 export const TOOL_META: Record<string, ToolMeta> = {
+  ask_intake_questions: { label: "Asked intake questions", running: "Drafting intake", icon: <IconSpark /> },
   search_pinterest: { label: "Browsing references", running: "Scanning Pinterest", icon: <IconSearch /> },
   search_components: { label: "Finding patterns", running: "Looking up components", icon: <IconGrid /> },
   fetch_image: { label: "Peeking at image", running: "Loading image", icon: <IconImage /> },

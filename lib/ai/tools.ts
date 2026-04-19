@@ -125,6 +125,49 @@ export const synthesizeConcept = tool({
   execute: async (concept) => ({ ok: true, concept }),
 });
 
+export const askIntakeQuestions = tool({
+  description:
+    "Ask the user 3-6 short, decisive intake questions before generating. Use ONLY on the FIRST turn when the user's brief is vague (1-6 words, abstract concept with no clear scope). Each question offers 3-6 preset pill answers plus an Other free-text slot. Stop after calling this tool — do NOT emit_artifact in the same turn. The UI renders the questions inline; the user replies with picks, then you generate.",
+  inputSchema: z.object({
+    intro: z
+      .string()
+      .max(160)
+      .describe(
+        "One short sentence framing why you need answers. Shown above the form.",
+      ),
+    questions: z
+      .array(
+        z.object({
+          id: z.string().describe("slug-id like 'surface' or 'user'"),
+          title: z.string().describe("Question headline."),
+          subtitle: z.string().optional().describe("Optional one-line hint."),
+          multi: z
+            .boolean()
+            .default(false)
+            .describe("Allow multiple selections."),
+          options: z
+            .array(
+              z.object({
+                label: z.string(),
+                value: z.string().optional(),
+              }),
+            )
+            .min(2)
+            .max(8)
+            .describe("Pill-style options. Always include 'Decide for me'."),
+          allowOther: z.boolean().default(true),
+        }),
+      )
+      .min(3)
+      .max(6),
+  }),
+  execute: async ({ intro, questions }) => ({
+    ok: true,
+    intro,
+    count: questions.length,
+  }),
+});
+
 export const applyDesignSystem = tool({
   description:
     "Load a saved design system by id and return its tokens (colors, type, spacing, radius). Call only when the user has referenced a specific saved system. If not found, returns applied:false.",
@@ -171,6 +214,7 @@ export const emitArtifact = tool({
 });
 
 export const designTools = {
+  ask_intake_questions: askIntakeQuestions,
   search_pinterest: searchPinterest,
   search_components: searchComponents,
   fetch_image: fetchImage,
