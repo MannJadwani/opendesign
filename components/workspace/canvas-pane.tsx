@@ -318,7 +318,7 @@ export function CanvasPane({
 
   return (
     <section
-      className={`relative mt-3 flex flex-col overflow-hidden border border-black/5 bg-white ${
+      className={`relative mt-3 flex min-w-0 flex-1 flex-col overflow-hidden border border-black/5 bg-white ${
         fullscreen ? "mx-3 rounded-t-2xl" : "rounded-tl-2xl"
       }`}
       style={
