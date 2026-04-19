@@ -16,7 +16,7 @@ const serif = Instrument_Serif({
 });
 
 const SITE_URL =
-  process.env.NEXT_PUBLIC_SITE_URL ?? "https://opendesign.app";
+  process.env.NEXT_PUBLIC_SITE_URL ?? "https://freeclaudedesign.com";
 const SITE_NAME = "OpenDesign";
 const SITE_TAGLINE = "Open-source AI design canvas";
 const SITE_DESCRIPTION =

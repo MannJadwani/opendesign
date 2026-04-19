@@ -71,7 +71,7 @@ export default async function OG() {
             letterSpacing: 3,
           }}
         >
-          <span style={{ color: "#D9623A" }}>●</span> opendesign.app
+          <span style={{ color: "#D9623A" }}>●</span> freeclaudedesign.com
         </div>
       </div>
     ),
