@@ -158,7 +158,7 @@ function PendingComposer({
             }
           }}
           rows={3}
-          placeholder="Leave a note for Claude…"
+          placeholder="Leave a note for OpenDesign…"
           className="w-full resize-none rounded-md border border-black/10 bg-[#FAF6EF] px-2 py-1.5 text-[12px] text-[#1F1B16] focus:border-[#D9623A] focus:outline-none"
         />
         <div className="mt-1.5 flex items-center justify-end gap-1.5">

@@ -63,7 +63,7 @@ export function CanvasHeader({
           type="button"
           onClick={onExplore}
           disabled={!canExplore}
-          title={canExplore ? "Ask Claude for 3 alternative directions" : "Available once an artifact is rendered"}
+          title={canExplore ? "Ask OpenDesign for 3 alternative directions" : "Available once an artifact is rendered"}
           className="flex items-center gap-1.5 rounded-md border border-black/10 bg-white px-2 py-1 text-[11px] font-medium text-[#3D3831] hover:bg-[#FAF6EF] disabled:cursor-not-allowed disabled:opacity-50"
         >
           <span aria-hidden>✦</span>

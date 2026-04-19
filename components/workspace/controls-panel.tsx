@@ -80,7 +80,7 @@ export function ControlsPanel({ iframeRef, controls, onRegenerate }: Props) {
         onClick={regenerate}
         disabled={!dirty}
         className="shrink-0 rounded-md bg-[#D9623A] px-2 py-1 text-[10px] font-medium text-white hover:bg-[#C0462A] disabled:cursor-not-allowed disabled:opacity-50"
-        title="Ask Claude to regenerate using these values"
+        title="Ask OpenDesign to regenerate using these values"
       >
         Regenerate
       </button>
