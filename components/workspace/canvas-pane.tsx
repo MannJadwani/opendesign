@@ -5,6 +5,7 @@ import type { ArtifactVariant, InitialArtifact } from "./workspace";
 import { CanvasHeader, type DeviceMode } from "./canvas-header";
 import { CanvasPlaceholder } from "./canvas-placeholder";
 import { VariantStrip } from "./variant-strip";
+import { DeckStrip } from "./deck-strip";
 import { EditBar } from "./edit-bar";
 import { Inspector, type InspectorSelection } from "./inspector";
 import { injectEditorScript } from "@/lib/workspace/editor-inject";
@@ -22,6 +23,7 @@ import { ControlsPanel } from "./controls-panel";
 
 type Props = {
   projectId: string;
+  outputType: string;
   artifact: InitialArtifact;
   variants: ArtifactVariant[];
   activeIndex: number;
@@ -38,6 +40,7 @@ type Props = {
 
 export function CanvasPane({
   projectId,
+  outputType,
   artifact,
   variants,
   activeIndex,
@@ -351,19 +354,31 @@ export function CanvasPane({
         onExplore={onExplore}
         canExplore={!!artifact && !streaming}
       />
-      {variants.length > 1 && (
-        <VariantStrip
-          variants={variants}
+      {outputType === "slides" && variants.length > 0 ? (
+        <DeckStrip
+          slides={variants}
           activeIndex={activeIndex}
           onSelect={(i) => {
             onSelectVariant(i);
-            if (compareIndex === i) setCompareIndex(null);
+            setCompareIndex(null);
           }}
-          compareIndex={compareIndex}
-          onToggleCompare={(i) =>
-            setCompareIndex((cur) => (cur === i || i === activeIndex ? null : i))
-          }
+          disableKeys={editMode || commentMode}
         />
+      ) : (
+        variants.length > 1 && (
+          <VariantStrip
+            variants={variants}
+            activeIndex={activeIndex}
+            onSelect={(i) => {
+              onSelectVariant(i);
+              if (compareIndex === i) setCompareIndex(null);
+            }}
+            compareIndex={compareIndex}
+            onToggleCompare={(i) =>
+              setCompareIndex((cur) => (cur === i || i === activeIndex ? null : i))
+            }
+          />
+        )
       )}
       {editMode && artifact && (
         <EditBar
@@ -427,6 +442,28 @@ export function CanvasPane({
                     srcDoc={injectEditorScript(variants[compareIndex].html)}
                     sandbox="allow-scripts allow-same-origin"
                     className="h-full w-full bg-white"
+                  />
+                </div>
+              </div>
+            ) : outputType === "slides" && !editMode && !commentMode ? (
+              <div className="flex min-w-0 flex-1 items-center justify-center overflow-auto bg-[#0D0D0D] p-6">
+                <div className="relative aspect-[16/9] w-full max-w-[1280px] overflow-hidden rounded-xl border border-white/5 bg-white shadow-[0_16px_48px_rgba(0,0,0,0.45)]">
+                  <iframe
+                    ref={iframeRef}
+                    key={`${artifact.version}-${artifact.variant}`}
+                    title={artifact.title ?? "slide"}
+                    srcDoc={srcDoc}
+                    sandbox="allow-scripts allow-same-origin"
+                    className="h-full w-full bg-white"
+                  />
+                  <CommentOverlay
+                    comments={comments}
+                    pending={pending}
+                    onCreate={onCreateComment}
+                    onCancelPending={onCancelPending}
+                    onResolve={onResolveComment}
+                    onDelete={onDeleteCommentCb}
+                    onApply={onApplyCommentCb}
                   />
                 </div>
               </div>

@@ -25,6 +25,7 @@ type Props = {
   createShareAction: (projectId: string) => Promise<{ slug: string }>;
   revokeShareAction: (projectId: string) => Promise<void>;
   brandApply: boolean;
+  outputType: string;
 };
 
 export function Workspace({
@@ -37,6 +38,7 @@ export function Workspace({
   createShareAction,
   revokeShareAction,
   brandApply,
+  outputType,
 }: Props) {
   const [fullscreen, setFullscreen] = useState(false);
   const iframeRef = useRef<HTMLIFrameElement | null>(null);
@@ -104,6 +106,7 @@ export function Workspace({
         </div>
         <CanvasPane
           projectId={projectId}
+          outputType={outputType}
           artifact={artifact}
           variants={variants}
           activeIndex={activeIndex}

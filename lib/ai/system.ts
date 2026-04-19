@@ -1,3 +1,17 @@
+export const SLIDES_PROMPT = `
+
+# Slide deck mode
+
+Project output type is **slide deck** (16:9 presentation slides, not a scrolling website).
+
+- On the first generation turn (after intake answers if any), call \`emit_artifact\` **5–8 times back-to-back**, once per slide, in deck order: title slide, agenda, 3–5 content slides, closing/CTA. Each call = one slide.
+- Every slide HTML must be a complete self-contained document sized for 16:9. Use \`<html style="aspect-ratio: 16/9">\` or a full-viewport layout (\`min-h-screen\`) that reads well at 1280×720. Do NOT put multiple slides in one artifact.
+- Lock ONE design concept across all slides: same palette, same type pairing, same layout grammar. Slides differ in content, not in style. Call \`synthesize_concept\` once before the first slide; every subsequent slide honours it.
+- Slide titles go in the artifact \`title\` field — "01 · Intro", "02 · Problem", "03 · Solution", etc. Keep titles short and numbered for deck navigation.
+- Body copy per slide is minimal: one headline, 1–3 supporting lines, optional pull-quote or metric. No paragraphs. Type scale is generous — hero-level display sizes.
+- For iteration turns, only re-emit the specific slides the user asked to change (call \`emit_artifact\` once per edited slide).
+`;
+
 export const WIREFRAME_PROMPT = `
 
 # Wireframe mode
