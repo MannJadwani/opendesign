@@ -1,7 +1,9 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  turbopack: {
+    root: "/Users/mannjadwani/project/dozero/claude-design-clone",
+  },
 };
 
 export default nextConfig;
