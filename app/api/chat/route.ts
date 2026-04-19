@@ -45,41 +45,57 @@ export async function POST(req: Request) {
     });
   }
 
+  let turnVersion: number | null = null;
+  let turnVariant = 0;
+  let firstVariantTitle: string | null = null;
+
   return createAgentUIStreamResponse({
     agent: designAgent,
     uiMessages: messages,
     onStepFinish: async ({ toolCalls, toolResults }) => {
-      const emit = toolCalls?.find(
+      const emits = (toolCalls ?? []).filter(
         (c) => c.toolName === "emit_artifact" && !c.dynamic,
       );
-      if (!emit) return;
-      const result = toolResults?.find(
-        (r) => r.toolCallId === emit.toolCallId,
-      );
-      if (result && "error" in (result as Record<string, unknown>)) return;
-      const input = emit.input as {
-        title: string;
-        html: string;
-        controls?: unknown;
-      };
-      const [latest] = await db
-        .select({ version: schema.artifact.version })
-        .from(schema.artifact)
-        .where(eq(schema.artifact.projectId, projectId))
-        .orderBy(desc(schema.artifact.version))
-        .limit(1);
-      await db.insert(schema.artifact).values({
-        id: rid("art"),
-        projectId,
-        version: (latest?.version ?? 0) + 1,
-        html: input.html,
-        sidecar: { title: input.title, controls: input.controls ?? [] },
-      });
-      if (project.title === "Untitled" && input.title) {
+      for (const emit of emits) {
+        const result = toolResults?.find(
+          (r) => r.toolCallId === emit.toolCallId,
+        );
+        if (result && "error" in (result as Record<string, unknown>)) continue;
+        const input = emit.input as {
+          title: string;
+          html: string;
+          controls?: unknown;
+        };
+        if (turnVersion === null) {
+          const [latest] = await db
+            .select({ version: schema.artifact.version })
+            .from(schema.artifact)
+            .where(eq(schema.artifact.projectId, projectId))
+            .orderBy(desc(schema.artifact.version))
+            .limit(1);
+          turnVersion = (latest?.version ?? 0) + 1;
+          firstVariantTitle = input.title;
+        }
+        await db.insert(schema.artifact).values({
+          id: rid("art"),
+          projectId,
+          version: turnVersion,
+          variant: turnVariant,
+          html: input.html,
+          sidecar: { title: input.title, controls: input.controls ?? [] },
+        });
+        turnVariant += 1;
+      }
+      if (
+        project.title === "Untitled" &&
+        firstVariantTitle &&
+        turnVariant > 0
+      ) {
         await db
           .update(schema.project)
-          .set({ title: input.title, updatedAt: new Date() })
+          .set({ title: firstVariantTitle, updatedAt: new Date() })
           .where(eq(schema.project.id, projectId));
+        firstVariantTitle = null;
       }
     },
     originalMessages: messages,

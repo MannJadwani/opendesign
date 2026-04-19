@@ -26,8 +26,14 @@ export function ProjectGrid({ projects, onDelete }: Props) {
 
   return (
     <div className="mt-10 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-      {projects.map((p) => (
-        <ProjectCard key={p.id} project={p} onDelete={onDelete} />
+      {projects.map((p, i) => (
+        <div
+          key={p.id}
+          className="cd-enter-fade"
+          style={{ animationDelay: `${Math.min(i, 8) * 30}ms` }}
+        >
+          <ProjectCard project={p} onDelete={onDelete} />
+        </div>
       ))}
     </div>
   );

@@ -19,7 +19,7 @@ export function ToolPart({ part }: { part: Record<string, unknown> }) {
   const hasBody = input !== undefined || output !== undefined;
 
   return (
-    <div className="rounded-xl border border-black/5 bg-white/70 text-[12px]">
+    <div className="cd-enter-fade rounded-xl border border-black/5 bg-white/70 text-[12px]">
       <button
         type="button"
         onClick={() => hasBody && setOpen((v) => !v)}
@@ -49,7 +49,7 @@ export function ToolPart({ part }: { part: Record<string, unknown> }) {
         )}
       </button>
       {open && hasBody && (
-        <div className="space-y-2 border-t border-black/5 px-2.5 py-2">
+        <div className="cd-enter-slide-down space-y-2 border-t border-black/5 px-2.5 py-2">
           {input !== undefined && <JSONBlock label="input" data={input} />}
           {output !== undefined && (
             <JSONBlock label={errored ? "error" : "output"} data={output} />

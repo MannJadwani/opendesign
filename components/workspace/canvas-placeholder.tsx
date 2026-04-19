@@ -1,7 +1,7 @@
 export function CanvasPlaceholder({ streaming }: { streaming: boolean }) {
   return (
     <div className="relative flex flex-1 items-center justify-center">
-      <div className="flex flex-col items-center gap-3">
+      <div className="cd-enter-fade flex flex-col items-center gap-3">
         <h2
           className="text-[34px] italic tracking-tight text-[#1F1B16]"
           style={{ fontFamily: "var(--font-serif)" }}

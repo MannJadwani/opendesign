@@ -23,7 +23,7 @@ export default async function Home() {
               </h1>
             </div>
             <form action={async () => { "use server"; await createProject(); }}>
-              <button className="rounded-full bg-[#1a1a1a] px-4 py-2 text-sm text-[#F5F0E8]">
+              <button className="cd-hover-lift rounded-full bg-[#1a1a1a] px-4 py-2 text-sm text-[#F5F0E8] hover:bg-black">
                 + New project
               </button>
             </form>

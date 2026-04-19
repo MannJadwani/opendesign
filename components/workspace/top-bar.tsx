@@ -1,10 +1,13 @@
 "use client";
 
+import type { RefObject } from "react";
 import Link from "next/link";
 import { SignOutButton } from "@/components/sign-out-button";
 import { Brand } from "@/components/brand";
 import { IconHome } from "@/components/icons";
 import { SharePopover } from "./share-popover";
+import { ExportMenu } from "./export-menu";
+import type { InitialArtifact } from "./workspace";
 
 type Props = {
   projectId: string;
@@ -13,6 +16,8 @@ type Props = {
   initialShareSlug: string | null;
   createShareAction: (projectId: string) => Promise<{ slug: string }>;
   revokeShareAction: (projectId: string) => Promise<void>;
+  artifact: InitialArtifact;
+  iframeRef: RefObject<HTMLIFrameElement | null>;
 };
 
 export function TopBar({
@@ -22,6 +27,8 @@ export function TopBar({
   initialShareSlug,
   createShareAction,
   revokeShareAction,
+  artifact,
+  iframeRef,
 }: Props) {
   return (
     <header className="flex items-center justify-between bg-[#E8E0D0] px-3 py-2">
@@ -44,9 +51,7 @@ export function TopBar({
           createAction={createShareAction}
           revokeAction={revokeShareAction}
         />
-        <button className="rounded-lg bg-[#1F1B16] px-3.5 py-1.5 text-[13px] font-medium text-white hover:bg-black">
-          Export
-        </button>
+        <ExportMenu artifact={artifact} iframeRef={iframeRef} />
         {userEmail ? <SignOutButton /> : null}
       </div>
     </header>

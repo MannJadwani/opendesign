@@ -5,6 +5,7 @@ import {
   boolean,
   jsonb,
   integer,
+  doublePrecision,
   index,
 } from "drizzle-orm/pg-core";
 
@@ -98,8 +99,9 @@ export const artifact = pgTable(
       .notNull()
       .references(() => project.id, { onDelete: "cascade" }),
     version: integer("version").notNull().default(1),
+    variant: integer("variant").notNull().default(0),
     html: text("html").notNull(),
-    sidecar: jsonb("sidecar"), // { controls, anchors, palette }
+    sidecar: jsonb("sidecar"), // { title, controls, anchors, palette }
     createdAt: timestamp("created_at").notNull().defaultNow(),
   },
   (t) => [index("artifact_project_idx").on(t.projectId)],
@@ -137,7 +139,10 @@ export const comment = pgTable(
       onDelete: "set null",
     }),
     authorName: text("author_name"), // for guest commenters
-    anchor: text("anchor").notNull(), // data-cd-id
+    anchor: text("anchor"), // data-cd-id of nearest tagged block, if any
+    leafId: text("leaf_id"), // runtime data-cd-leaf id, ephemeral — best-effort
+    xPct: doublePrecision("x_pct"), // 0..1 of iframe body width
+    yPct: doublePrecision("y_pct"), // 0..1 of iframe body height
     body: text("body").notNull(),
     resolved: boolean("resolved").notNull().default(false),
     createdAt: timestamp("created_at").notNull().defaultNow(),

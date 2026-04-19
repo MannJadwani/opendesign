@@ -1,0 +1,1 @@
+ALTER TABLE "artifact" ADD COLUMN "variant" integer DEFAULT 0 NOT NULL;

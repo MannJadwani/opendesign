@@ -112,3 +112,148 @@ export async function getProject(id: string) {
     .limit(1);
   return row ?? null;
 }
+
+async function assertProjectOwner(projectId: string, userId: string) {
+  const [row] = await db
+    .select({ id: schema.project.id })
+    .from(schema.project)
+    .where(and(eq(schema.project.id, projectId), eq(schema.project.userId, userId)))
+    .limit(1);
+  if (!row) throw new Error("not_found");
+}
+
+export type CommentRow = {
+  id: string;
+  artifactId: string;
+  authorName: string | null;
+  anchor: string | null;
+  leafId: string | null;
+  xPct: number | null;
+  yPct: number | null;
+  body: string;
+  resolved: boolean;
+  createdAt: Date;
+};
+
+export async function listCommentsForArtifact(
+  projectId: string,
+  artifactId: string,
+): Promise<CommentRow[]> {
+  const user = await requireUser();
+  await assertProjectOwner(projectId, user.id);
+  const rows = await db
+    .select()
+    .from(schema.comment)
+    .where(eq(schema.comment.artifactId, artifactId))
+    .orderBy(desc(schema.comment.createdAt));
+  return rows as CommentRow[];
+}
+
+export async function createComment(
+  projectId: string,
+  artifactId: string,
+  input: {
+    body: string;
+    xPct: number | null;
+    yPct: number | null;
+    leafId: string | null;
+    anchor: string | null;
+  },
+): Promise<CommentRow> {
+  const user = await requireUser();
+  await assertProjectOwner(projectId, user.id);
+  const id = rid("cmt");
+  const [row] = await db
+    .insert(schema.comment)
+    .values({
+      id,
+      artifactId,
+      authorId: user.id,
+      authorName: user.name ?? user.email ?? null,
+      body: input.body,
+      xPct: input.xPct,
+      yPct: input.yPct,
+      leafId: input.leafId,
+      anchor: input.anchor,
+    })
+    .returning();
+  return row as CommentRow;
+}
+
+export async function resolveComment(projectId: string, commentId: string, resolved: boolean) {
+  const user = await requireUser();
+  await assertProjectOwner(projectId, user.id);
+  await db
+    .update(schema.comment)
+    .set({ resolved })
+    .where(eq(schema.comment.id, commentId));
+}
+
+export async function deleteComment(projectId: string, commentId: string) {
+  const user = await requireUser();
+  await assertProjectOwner(projectId, user.id);
+  await db.delete(schema.comment).where(eq(schema.comment.id, commentId));
+}
+
+export async function saveEditedArtifact(
+  projectId: string,
+  html: string,
+  title?: string,
+  controls?: unknown,
+) {
+  const user = await requireUser();
+  const [project] = await db
+    .select()
+    .from(schema.project)
+    .where(
+      and(
+        eq(schema.project.id, projectId),
+        eq(schema.project.userId, user.id),
+      ),
+    )
+    .limit(1);
+  if (!project) throw new Error("not_found");
+  const [latest] = await db
+    .select({ version: schema.artifact.version })
+    .from(schema.artifact)
+    .where(eq(schema.artifact.projectId, projectId))
+    .orderBy(desc(schema.artifact.version))
+    .limit(1);
+  const version = (latest?.version ?? 0) + 1;
+  const id = rid("art");
+  await db.insert(schema.artifact).values({
+    id,
+    projectId,
+    version,
+    variant: 0,
+    html,
+    sidecar: {
+      title: title ?? project.title,
+      edited: true,
+      controls: Array.isArray(controls) ? controls : [],
+    },
+  });
+  await db
+    .update(schema.project)
+    .set({ updatedAt: new Date() })
+    .where(eq(schema.project.id, projectId));
+  return { id, version };
+}
+
+export async function getArtifactIdsForVersion(
+  projectId: string,
+  version: number,
+): Promise<{ id: string; variant: number }[]> {
+  const user = await requireUser();
+  await assertProjectOwner(projectId, user.id);
+  const rows = await db
+    .select({ id: schema.artifact.id, variant: schema.artifact.variant })
+    .from(schema.artifact)
+    .where(
+      and(
+        eq(schema.artifact.projectId, projectId),
+        eq(schema.artifact.version, version),
+      ),
+    );
+  return rows;
+}

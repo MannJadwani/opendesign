@@ -110,6 +110,37 @@ export function IconTrash(p: IconProps) {
     </Svg>
   );
 }
+export function IconEdit(p: IconProps) {
+  return (
+    <Svg size={12} strokeWidth={2} {...p}>
+      <path d="M4 20h4l10-10-4-4L4 16v4Z" />
+      <path d="m14 6 4 4" />
+    </Svg>
+  );
+}
+export function IconMonitor(p: IconProps) {
+  return (
+    <Svg size={12} strokeWidth={2} {...p}>
+      <rect x="2" y="4" width="20" height="13" rx="2" />
+      <path d="M8 21h8M12 17v4" />
+    </Svg>
+  );
+}
+export function IconPhone(p: IconProps) {
+  return (
+    <Svg size={12} strokeWidth={2} {...p}>
+      <rect x="7" y="2" width="10" height="20" rx="2" />
+      <path d="M11 18h2" />
+    </Svg>
+  );
+}
+export function IconChat(p: IconProps) {
+  return (
+    <Svg size={12} strokeWidth={2} {...p}>
+      <path d="M4 5h16v11H8l-4 4V5Z" />
+    </Svg>
+  );
+}
 export function IconChevronRight(p: IconProps) {
   return (
     <svg width={p.size ?? 10} height={p.size ?? 10} viewBox="0 0 20 20" {...p}>

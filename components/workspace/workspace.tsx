@@ -1,21 +1,26 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport, type UIMessage } from "ai";
-import { extractEmitArtifact } from "@/lib/workspace/artifact";
 import { TopBar } from "./top-bar";
 import { ChatPane } from "./chat-pane";
 import { CanvasPane } from "./canvas-pane";
+import { type CommentRow } from "@/lib/actions";
+import {
+  useArtifacts,
+  type ArtifactVariant,
+} from "@/lib/workspace/use-artifacts";
 
-export type InitialArtifact = { html: string; title?: string; version: number } | null;
+export type { ArtifactVariant };
+export type InitialArtifact = ArtifactVariant | null;
 
 type Props = {
   projectId: string;
   projectTitle: string;
   userEmail?: string | null;
   initialMessages: UIMessage[];
-  initialArtifact: InitialArtifact;
+  initialArtifacts: ArtifactVariant[];
   initialShareSlug: string | null;
   createShareAction: (projectId: string) => Promise<{ slug: string }>;
   revokeShareAction: (projectId: string) => Promise<void>;
@@ -26,13 +31,13 @@ export function Workspace({
   projectTitle,
   userEmail,
   initialMessages,
-  initialArtifact,
+  initialArtifacts,
   initialShareSlug,
   createShareAction,
   revokeShareAction,
 }: Props) {
-  const [artifact, setArtifact] = useState<InitialArtifact>(initialArtifact);
   const [fullscreen, setFullscreen] = useState(false);
+  const iframeRef = useRef<HTMLIFrameElement | null>(null);
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -55,28 +60,16 @@ export function Workspace({
     id: projectId,
     messages: initialMessages,
     transport,
-    onFinish: ({ message }) => {
-      const emit = extractEmitArtifact(message as UIMessage);
-      if (emit) {
-        setArtifact({
-          html: emit.html,
-          title: emit.title,
-          version: (artifact?.version ?? 0) + 1,
-        });
-      }
-    },
   });
 
-  // Stream-time scan so canvas updates mid-stream when emit tool input completes.
-  const latest = chat.messages[chat.messages.length - 1];
-  const streamingEmit = latest ? extractEmitArtifact(latest) : null;
-  if (streamingEmit && (!artifact || streamingEmit.html !== artifact.html)) {
-    setArtifact({
-      html: streamingEmit.html,
-      title: streamingEmit.title,
-      version: (artifact?.version ?? 0) + 1,
+  const { variants, activeIndex, artifact, selectVariant, applySave } =
+    useArtifacts({
+      projectId,
+      initialMessages,
+      initialArtifacts,
+      chatMessages: chat.messages,
+      status: chat.status,
     });
-  }
 
   return (
     <div className="flex h-screen flex-col bg-[#E8E0D0] text-[#1F1B16]">
@@ -87,13 +80,16 @@ export function Workspace({
         initialShareSlug={initialShareSlug}
         createShareAction={createShareAction}
         revokeShareAction={revokeShareAction}
+        artifact={artifact}
+        iframeRef={iframeRef}
       />
       <main
-        className={`grid flex-1 overflow-hidden ${
-          fullscreen ? "grid-cols-1" : "grid-cols-[420px_1fr]"
-        }`}
+        className="cd-animate-cols grid flex-1 overflow-hidden"
+        style={{
+          gridTemplateColumns: fullscreen ? "0px 1fr" : "420px 1fr",
+        }}
       >
-        {!fullscreen && (
+        <div className="flex min-h-0 min-w-0 overflow-hidden">
           <ChatPane
             messages={chat.messages}
             status={chat.status}
@@ -102,12 +98,41 @@ export function Workspace({
             stop={chat.stop}
             clearError={chat.clearError}
           />
-        )}
+        </div>
         <CanvasPane
+          projectId={projectId}
           artifact={artifact}
+          variants={variants}
+          activeIndex={activeIndex}
+          onSelectVariant={selectVariant}
+          onArtifactSaved={(id, html, version) => {
+            const last = chat.messages[chat.messages.length - 1] ?? null;
+            applySave({
+              id,
+              html,
+              version,
+              title: artifact?.title,
+              controls: artifact?.controls ?? [],
+              currentAssistantMessage: last,
+            });
+          }}
           streaming={chat.status === "streaming"}
           fullscreen={fullscreen}
           onToggleFullscreen={() => setFullscreen((v) => !v)}
+          iframeRef={iframeRef}
+          onRegenerateFromControls={(summary: string) => {
+            chat.sendMessage({ text: summary });
+          }}
+          onApplyComment={(c: CommentRow) => {
+            const anchor = c.anchor
+              ? `data-cd-id="${c.anchor}"`
+              : c.leafId
+                ? `leaf "${c.leafId}"`
+                : `position (${Math.round((c.xPct ?? 0) * 100)}%, ${Math.round((c.yPct ?? 0) * 100)}%)`;
+            chat.sendMessage({
+              text: `I left a comment on the artifact at ${anchor}: "${c.body}". Please update the design to address it.`,
+            });
+          }}
         />
       </main>
     </div>

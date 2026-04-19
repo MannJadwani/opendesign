@@ -95,7 +95,7 @@ export function Composer({ status, sendMessage, stop }: Props) {
       }`}
     >
       {files.length > 0 && (
-        <div className="mb-2 flex flex-wrap gap-2">
+        <div className="cd-enter-fade mb-2 flex flex-wrap gap-2">
           {files.map((f, i) => (
             <FileChip
               key={`${f.name}-${i}`}
@@ -161,7 +161,7 @@ export function Composer({ status, sendMessage, stop }: Props) {
           <button
             type="submit"
             disabled={!text.trim() && files.length === 0}
-            className="rounded-lg bg-[#D9623A] px-3.5 py-1.5 text-[13px] font-medium text-white disabled:opacity-50"
+            className="cd-hover-lift rounded-lg bg-[#D9623A] px-3.5 py-1.5 text-[13px] font-medium text-white hover:bg-[#C0462A] disabled:opacity-50"
           >
             Send
           </button>
@@ -174,7 +174,7 @@ export function Composer({ status, sendMessage, stop }: Props) {
 function FileChip({ file, onRemove }: { file: File; onRemove: () => void }) {
   const url = URL.createObjectURL(file);
   return (
-    <div className="group relative flex items-center gap-2 rounded-lg border border-black/10 bg-[#F5F0E8] py-1 pl-1 pr-2">
+    <div className="cd-enter-pop group relative flex items-center gap-2 rounded-lg border border-black/10 bg-[#F5F0E8] py-1 pl-1 pr-2">
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         src={url}

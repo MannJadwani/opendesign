@@ -8,6 +8,7 @@ import {
   revokeShareLink,
 } from "@/lib/share";
 import { db, schema } from "@/lib/db";
+import { coerceControls } from "@/lib/workspace/controls";
 import type { UIMessage } from "ai";
 
 export default async function ProjectPage({
@@ -19,7 +20,7 @@ export default async function ProjectPage({
   const [project, user] = await Promise.all([getProject(id), getSessionUser()]);
   if (!project) notFound();
 
-  const [rawMessages, artifacts, shareSlug] = await Promise.all([
+  const [rawMessages, allArtifacts, shareSlug] = await Promise.all([
     db
       .select()
       .from(schema.message)
@@ -29,22 +30,30 @@ export default async function ProjectPage({
       .select()
       .from(schema.artifact)
       .where(eq(schema.artifact.projectId, id))
-      .orderBy(desc(schema.artifact.version))
-      .limit(1),
+      .orderBy(desc(schema.artifact.version), asc(schema.artifact.variant)),
     getExistingShareSlug(id),
   ]);
 
   const initialMessages: UIMessage[] = rawMessages.map(
     (row) => row.content as UIMessage,
   );
-  const latest = artifacts[0];
-  const initialArtifact = latest
-    ? {
-        html: latest.html,
-        title: (latest.sidecar as { title?: string } | null)?.title,
-        version: latest.version,
-      }
-    : null;
+  const latestVersion = allArtifacts[0]?.version;
+  const latestGroup = latestVersion
+    ? allArtifacts.filter((a) => a.version === latestVersion)
+    : [];
+  const initialArtifacts = latestGroup.map((row) => {
+    const sidecar = row.sidecar as
+      | { title?: string; controls?: unknown }
+      | null;
+    return {
+      id: row.id,
+      html: row.html,
+      title: sidecar?.title,
+      version: row.version,
+      variant: row.variant,
+      controls: coerceControls(sidecar?.controls),
+    };
+  });
 
   return (
     <Workspace
@@ -52,7 +61,7 @@ export default async function ProjectPage({
       projectTitle={project.title}
       userEmail={user?.email}
       initialMessages={initialMessages}
-      initialArtifact={initialArtifact}
+      initialArtifacts={initialArtifacts}
       initialShareSlug={shareSlug}
       createShareAction={async (pid: string) => {
         "use server";

@@ -1,10 +1,11 @@
 import type { UIMessage } from "ai";
 import { ToolPart } from "./tool-part";
+import { Markdown } from "./markdown";
 
 export function MessageBubble({ message }: { message: UIMessage }) {
   const isUser = message.role === "user";
   return (
-    <div className={isUser ? "flex justify-end" : ""}>
+    <div className={`cd-enter-fade ${isUser ? "flex justify-end" : ""}`}>
       <div
         className={
           isUser
@@ -13,17 +14,19 @@ export function MessageBubble({ message }: { message: UIMessage }) {
         }
       >
         {(message.parts ?? []).map((part, i) => (
-          <Part key={i} part={part as Record<string, unknown>} />
+          <Part key={i} part={part as Record<string, unknown>} isUser={isUser} />
         ))}
       </div>
     </div>
   );
 }
 
-function Part({ part }: { part: Record<string, unknown> }) {
+function Part({ part, isUser }: { part: Record<string, unknown>; isUser: boolean }) {
   const type = part.type as string;
   if (type === "text") {
-    return <p className="whitespace-pre-wrap">{(part.text as string) ?? ""}</p>;
+    const text = (part.text as string) ?? "";
+    if (isUser) return <p className="whitespace-pre-wrap">{text}</p>;
+    return <Markdown text={text} />;
   }
   if (type === "file") {
     const mediaType = (part.mediaType as string | undefined) ?? "";

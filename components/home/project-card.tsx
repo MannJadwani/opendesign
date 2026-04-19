@@ -16,7 +16,7 @@ type Props = {
 
 export function ProjectCard({ project, onDelete }: Props) {
   return (
-    <div className="group relative rounded-2xl bg-[#F5F0E8] p-4 hover:bg-white transition-colors border border-black/5">
+    <div className="group relative rounded-2xl bg-[#F5F0E8] p-4 hover:bg-white border border-black/5 transition-all duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] hover:-translate-y-0.5 hover:shadow-[0_8px_24px_rgba(0,0,0,0.06)]">
       <Link
         href={`/p/${project.id}`}
         className="absolute inset-0 rounded-2xl z-0"

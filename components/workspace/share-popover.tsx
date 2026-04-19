@@ -74,7 +74,7 @@ export function SharePopover({
         Share
       </button>
       {open && (
-        <div className="absolute right-0 top-full z-30 mt-2 w-[320px] rounded-xl border border-black/10 bg-white p-3 shadow-[0_8px_24px_rgba(0,0,0,0.08)]">
+        <div className="cd-enter-pop absolute right-0 top-full z-30 mt-2 w-[320px] origin-top-right rounded-xl border border-black/10 bg-white p-3 shadow-[0_8px_24px_rgba(0,0,0,0.08)]">
           <p className="text-[12px] font-medium text-[#1F1B16]">Share link</p>
           <p className="mt-0.5 text-[11px] text-[#6B655D]">
             Anyone with the link can view the latest artifact. Read-only.

@@ -1,5 +1,6 @@
 import { tool } from "ai";
 import { z } from "zod";
+import { controlSchema } from "@/lib/workspace/controls";
 import { searchPinterest as pinterestSearch } from "./scrapers/pinterest";
 import { searchDdgImages } from "./scrapers/ddg-images";
 import { fetchImageMeta } from "./scrapers/fetch-image";
@@ -148,22 +149,18 @@ export const applyDesignSystem = tool({
 
 export const emitArtifact = tool({
   description:
-    "TERMINAL. Emit the final self-contained HTML artifact. Use <data-cd-id> attributes on major blocks. Must be complete HTML including <html>/<body>. No external scripts. TailwindCDN OK via <script src='https://cdn.tailwindcss.com'></script>.",
+    "Emit a final self-contained HTML artifact. Use <data-cd-id> attributes on major blocks. Must be complete HTML including <html>/<body>. No external scripts. TailwindCDN OK via <script src='https://cdn.tailwindcss.com'></script>. Call ONCE per turn unless the user explicitly asked for multiple options / variants / takes — in that case call 2–3 times back-to-back with genuinely different directions (different layout, palette, or vibe — not cosmetic tweaks). Each call is an independent variant at the same version.",
   inputSchema: z.object({
     title: z.string(),
     html: z
       .string()
       .describe("Full HTML document as a single string."),
     controls: z
-      .array(
-        z.object({
-          id: z.string(),
-          label: z.string(),
-          kind: z.enum(["slider", "toggle", "swatch"]),
-          target: z.string(),
-        }),
-      )
-      .optional(),
+      .array(controlSchema)
+      .optional()
+      .describe(
+        "Optional sliders bound to a CSS property or custom property on a data-cd-id block. Use for dimensions the user will plausibly tune (hero padding, radius, font scale, accent hue). 0–6 controls total.",
+      ),
   }),
   execute: async ({ title, html, controls }) => ({
     ok: true,

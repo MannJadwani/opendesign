@@ -24,12 +24,10 @@ export function ChatPane({
   stop,
   clearError,
 }: Props) {
-  const showThinking =
-    (status === "submitted" || status === "streaming") &&
-    !isLastAssistantStreaming(messages);
+  const showThinking = status === "submitted" || status === "streaming";
 
   return (
-    <aside className="relative ml-3 mt-3 flex flex-col overflow-hidden rounded-tr-2xl border border-black/5 bg-[#F5F0E8]">
+    <aside className="relative mr-3 mt-3 mb-3 flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-black/5 bg-[#F5F0E8]">
       {messages.length === 0 && !showThinking ? (
         <EmptyChat />
       ) : (
@@ -39,14 +37,4 @@ export function ChatPane({
       <Composer status={status} sendMessage={sendMessage} stop={stop} />
     </aside>
   );
-}
-
-function isLastAssistantStreaming(messages: UIMessage[]) {
-  const last = messages[messages.length - 1];
-  if (!last || last.role !== "assistant") return false;
-  const parts = (last.parts ?? []) as Array<Record<string, unknown>>;
-  return parts.some((p) => {
-    const t = p.type as string | undefined;
-    return t === "text" || t === "reasoning" || t?.startsWith("tool-");
-  });
 }
